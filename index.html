@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MKW 順位トラッカー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E8303A;--red2:#c4242d;
+  --blue:#1a6fc4;--blue2:#1459a0;
+  --yellow:#F5C518;--yellow2:#d4a900;
+  --green:#2eaa4a;--green2:#228a3a;
+  --bg:#0f1923;--bg2:#162130;--bg3:#1e2e40;
+  --card:#1e2e40;--card2:#243548;
+  --text:#f0ede8;--text2:#9ab0c8;--text3:#5a7a96;
+  --border:#2a3f56;--border2:#3a5570;
+  --radius:10px;--radius-lg:16px;
+  --font:'Nunito',system-ui,sans-serif;
+  --font-mk:'Fredoka One',system-ui,sans-serif;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(180deg,transparent 0px,transparent 60px,rgba(255,255,255,.015) 60px,rgba(255,255,255,.015) 62px);pointer-events:none;z-index:0;animation:road 6s linear infinite}
+@keyframes road{0%{background-position:0 0}100%{background-position:0 62px}}
+.container{max-width:820px;margin:0 auto;padding:1.5rem 1rem;position:relative;z-index:1}
+.mk-header{text-align:left;margin-bottom:1.5rem;padding:1.4rem 1.8rem;background:var(--bg2);border-radius:var(--radius-lg);border:1px solid var(--border2);position:relative;overflow:hidden;display:flex;align-items:center;gap:1.2rem}
+.mk-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#fff 0%,var(--text2) 100%)}
+.mk-header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 0% 50%,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
+.mk-header-icon{font-size:32px;flex-shrink:0;opacity:.9}
+.mk-header-body{flex:1}
+.mk-header-title{font-family:var(--font-mk);font-size:22px;color:var(--text);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;line-height:1}
+.mk-header-sub{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:3px;text-transform:uppercase}
+.mk-header-badge{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.mk-header-badge-item{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:3px 8px;border:1px solid var(--border2);border-radius:4px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.mc{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.mc:hover{transform:translateY(-2px);border-color:var(--border2)}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.mc:nth-child(1)::before{background:var(--yellow)}
+.mc:nth-child(2)::before{background:var(--blue)}
+.mc:nth-child(3)::before{background:var(--green)}
+.mc:nth-child(4)::before{background:var(--red)}
+.mc-lbl{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
+.mc-val{font-size:24px;font-weight:800;font-family:var(--font-mk)}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--bg2);padding:5px;border-radius:var(--radius);border:1.5px solid var(--border)}
+.tab{flex:1;padding:8px 4px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .2s;white-space:nowrap;font-family:var(--font)}
+.tab.on{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(232,48,58,.4)}
+.tab:hover:not(.on){background:var(--bg3);color:var(--text)}
+/* 試合入力 */
+.session-panel{background:var(--card);border:2px solid var(--blue);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem;box-shadow:0 0 20px rgba(26,111,196,.2)}
+.session-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.session-title{font-family:var(--font-mk);font-size:17px;color:var(--yellow)}
+.session-prog{font-size:12px;color:var(--text2);margin-top:2px}
+.progress-bar{width:100%;height:8px;background:var(--bg);border-radius:4px;margin-bottom:1rem;overflow:hidden;border:1px solid var(--border)}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--yellow));border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.session-summary{display:flex;gap:16px;padding:10px 14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:1rem;flex-wrap:wrap;border:1px solid var(--border)}
+.ss-item{font-size:11px;color:var(--text2);font-weight:600}
+.ss-val{font-size:15px;font-weight:800;font-family:var(--font-mk)}
+.race-row{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);transition:background .15s}
+.race-row:hover{background:var(--bg3)}
+.race-num{font-size:11px;font-weight:700;color:var(--text3);width:22px;text-align:center}
+.race-course{flex:1;font-size:12px;font-weight:600}
+.race-pts{font-size:11px;color:var(--yellow);width:40px;text-align:right;font-weight:700}
+.race-del{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:4px;transition:all .15s}
+.race-del:hover{color:#ff6b6b;background:rgba(255,107,107,.15)}
+/* コースピッカー */
+.picker-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;margin-top:16px}
+.course-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:8px;max-height:300px;overflow-y:auto;padding:2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.course-picker-grid::-webkit-scrollbar{width:6px}
+.course-picker-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.cp-card{background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .18s;position:relative}
+.cp-card:hover{border-color:var(--yellow);transform:translateY(-2px);box-shadow:0 4px 16px rgba(245,197,24,.2)}
+.cp-card.cp-sel{border-color:var(--yellow);background:rgba(245,197,24,.1);box-shadow:0 0 16px rgba(245,197,24,.35)}
+.cp-card.used{border-color:#c4242d!important;opacity:.7}
+.cp-card.used:hover{border-color:#E8303A!important;box-shadow:0 0 12px rgba(232,48,58,.35)!important;transform:translateY(-2px)}
+
+.tier-picker{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tier-btn{padding:7px 10px;font-size:13px;font-weight:800;font-family:var(--font-mk);border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .18s;min-width:42px;text-align:center}
+.tier-btn:hover{transform:translateY(-2px)}
+.tier-btn.t-sel{transform:scale(1.12);box-shadow:0 2px 14px rgba(0,0,0,.4)}
+/* tier colors */
+.tier-X{border-color:#ff4ecd;color:#ff4ecd}.tier-X.t-sel{background:#ff4ecd;color:#1a0015}
+.tier-S{border-color:#ff6b35;color:#ff6b35}.tier-S.t-sel{background:#ff6b35;color:#1a0800}
+.tier-A{border-color:#F5C518;color:#F5C518}.tier-A.t-sel{background:#F5C518;color:#1a1200}
+.tier-B{border-color:#5dca8a;color:#5dca8a}.tier-B.t-sel{background:#5dca8a;color:#001a0e}
+.tier-BC{border-color:#4ab89a;color:#4ab89a}.tier-BC.t-sel{background:#4ab89a;color:#001510}
+.tier-C{border-color:#378ADD;color:#378ADD}.tier-C.t-sel{background:#378ADD;color:#001020}
+.tier-CD{border-color:#5a7acc;color:#5a7acc}.tier-CD.t-sel{background:#5a7acc;color:#00081a}
+.tier-D{border-color:#8a7acc;color:#8a7acc}.tier-D.t-sel{background:#8a7acc;color:#08001a}
+.tier-DE{border-color:#aa6aaa;color:#aa6aaa}.tier-DE.t-sel{background:#aa6aaa;color:#150015}
+.tier-E{border-color:#cc6688;color:#cc6688}.tier-E.t-sel{background:#cc6688;color:#1a0010}
+.tier-EF{border-color:#aaaaaa;color:#aaaaaa}.tier-EF.t-sel{background:#aaaaaa;color:#111}
+.tier-F{border-color:#666;color:#888}.tier-F.t-sel{background:#666;color:#eee}
+.tier-SQ{border-color:#00e5ff;color:#00e5ff;position:relative}.tier-SQ.t-sel{background:#00e5ff;color:#001a1f}
+.tier-SQ::after{content:'SQ';font-size:8px;position:absolute;top:-5px;right:-4px;background:#00e5ff;color:#001a1f;border-radius:4px;padding:0 3px;font-weight:800;line-height:1.4}
+/* tier badge in match card */
+.tier-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;font-family:var(--font-mk);border:1.5px solid}
+
+.cp-warn{position:absolute;bottom:0;left:0;right:0;background:rgba(196,36,45,.88);color:#fff;font-size:9px;font-weight:700;text-align:center;padding:3px 0;letter-spacing:.5px}
+.cp-card.road-type{border-style:dashed}
+.cp-thumb{width:100%;height:54px;object-fit:cover;display:block}
+.cp-thumb-ph{width:100%;height:54px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.cp-name{font-size:11px;font-weight:700;padding:5px 7px;line-height:1.3;color:var(--text)}
+.cp-used-lbl{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:#aaa;font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700}
+.cp-road-lbl{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.7);color:var(--yellow);font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700}
+/* 順位グリッド */
+.rank-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.rank-btn{padding:9px 4px;font-size:14px;font-weight:800;font-family:var(--font-mk);border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .15s;text-align:center}
+.rank-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+.rank-btn.top3{border-color:rgba(245,197,24,.4);color:var(--yellow)}
+.rank-btn.top12{border-color:rgba(46,170,74,.4);color:#5dca8a}
+.rank-btn.rk-sel{background:var(--yellow);border-color:var(--yellow2);color:#1a1200;transform:scale(1.1);box-shadow:0 2px 14px rgba(245,197,24,.5)}
+.add-race-btn{width:100%;margin-top:14px;padding:13px;font-size:14px;font-weight:800;font-family:var(--font-mk);border-radius:var(--radius);border:none;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;cursor:pointer;transition:all .2s;letter-spacing:.5px;box-shadow:0 3px 12px rgba(46,170,74,.3)}
+.add-race-btn:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(46,170,74,.45)}
+.add-race-btn:active{transform:scale(.97)}
+.add-race-btn:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none}
+.finish-btn{width:100%;padding:15px;font-size:16px;font-weight:800;font-family:var(--font-mk);border-radius:var(--radius);border:3px solid var(--yellow2);background:linear-gradient(135deg,var(--yellow),var(--yellow2));color:#1a1200;cursor:pointer;transition:all .2s;letter-spacing:.5px;animation:glow 2s ease-in-out infinite;margin-top:10px}
+@keyframes glow{0%,100%{box-shadow:0 4px 20px rgba(245,197,24,.35)}50%{box-shadow:0 4px 36px rgba(245,197,24,.75)}}
+.finish-btn:hover{transform:translateY(-2px) scale(1.01)}
+.reset-btn{padding:6px 12px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid #ff6b6b;background:transparent;color:#ff6b6b;cursor:pointer;transition:all .15s}
+.reset-btn:hover{background:rgba(255,107,107,.15)}
+/* コース戦績 */
+.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:1.25rem}
+.ccard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
+.ccard:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:var(--shadow)}
+.ccard.sel{border:2px solid var(--yellow);box-shadow:0 0 16px rgba(245,197,24,.3)}
+.ccard.road-type{border-style:dashed}
+.cthumb{width:100%;height:70px;object-fit:cover;display:block}
+.cthumb-ph{width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-size:26px}
+.img-btn{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .15s}
+.ccard:hover .img-btn{opacity:1}
+.road-badge{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.65);color:var(--yellow);font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700}
+.cinfo{padding:9px 11px}
+.cname{font-size:12px;font-weight:700;margin-bottom:5px;line-height:1.3}
+.cmeta{display:flex;justify-content:space-between;align-items:center}
+.ccup{font-size:10px;color:var(--text3)}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.b-none{background:var(--bg);color:var(--text3)}
+.b-top{background:#3d2800;color:#F5C518;border:1px solid #F5C518}
+.b-mid{background:#0d2e14;color:#2eaa4a;border:1px solid #2eaa4a}
+.b-low{background:#2e0d0d;color:#ff6b6b;border:1px solid #ff6b6b}
+.detail{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.25rem}
+.d-hdr{display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap}
+.d-thumb{width:56px;height:40px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)}
+.d-name{font-size:16px;font-weight:800;font-family:var(--font-mk)}
+.d-cup{font-size:12px;color:var(--text2);margin-top:2px}
+.dstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:1rem}
+.ds{background:var(--bg2);border-radius:var(--radius);padding:10px 12px;border:1px solid var(--border)}
+.ds-l{font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:600}
+.ds-v{font-size:16px;font-weight:800;font-family:var(--font-mk)}
+.hist-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.h-num{width:18px;color:var(--text3);text-align:center;font-size:11px;font-weight:700}
+.h-date{color:var(--text3);flex:1;font-size:11px}
+.del-btn{font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;transition:all .15s}
+.del-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.15)}
+.rk-pill{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.rk1{background:#3d2800;color:#F5C518;border:1px solid #F5C518}
+.rk2{background:#1a2a3a;color:#85B7EB;border:1px solid #4a8cc4}
+.rk3{background:#0d2e14;color:#5dca8a;border:1px solid #2eaa4a}
+.rk12{background:#1e2e40;color:#9ab0c8}
+.rk-e{background:var(--bg2);color:var(--text3)}
+/* 試合履歴 */
+.match-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.match-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.match-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.match-no{font-size:13px;font-weight:800;font-family:var(--font-mk)}
+.match-pts{font-size:20px;font-weight:800;font-family:var(--font-mk)}
+.pts-high{color:var(--yellow)}.pts-mid{color:#85B7EB}.pts-low{color:var(--text2)}
+.match-sub{font-size:11px;color:var(--text2)}
+.match-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.match-race-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;color:var(--text2)}
+/* ランキング・グラフ */
+.sort-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.sort-btn{padding:5px 12px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.sort-btn.on{background:var(--blue);border-color:var(--blue2);color:#fff}
+.rnk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-lbl{font-size:11px;color:var(--text2);width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.bar-track{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.bar-avg{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),#85B7EB);transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bar-rate{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#5dca8a);transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-size:11px;font-weight:700;width:44px;text-align:right}
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
+/* モーダル */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;display:flex;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
+.modal{background:var(--card2);border-radius:var(--radius-lg);border:1.5px solid var(--border2);padding:1.5rem;width:340px;max-height:85vh;overflow-y:auto;margin-bottom:40px;box-shadow:var(--shadow)}
+.modal-title{font-family:var(--font-mk);font-size:16px;color:var(--yellow);margin-bottom:.75rem}
+.modal-note{font-size:12px;color:var(--text2);margin-bottom:1rem;padding:8px 10px;background:var(--bg2);border-radius:var(--radius);line-height:1.5;border:1px solid var(--border)}
+.fr{margin-bottom:10px}
+.fl{font-size:11px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600}
+.fr select,.fr input{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);outline:none;font-family:var(--font)}
+.fr select:focus,.fr input:focus{border-color:var(--blue)}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
+.bc{padding:8px 16px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font)}
+.bs{padding:8px 16px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font)}
+.bs-r{padding:8px 16px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:#c4242d;color:#fff;cursor:pointer;font-family:var(--font)}
+.img-prev{width:100%;height:75px;object-fit:cover;border-radius:var(--radius);margin-top:6px;display:none}
+.save-bar{position:sticky;bottom:0;background:var(--bg);padding:.75rem 0;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--border);margin-top:1rem}
+.save-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.save-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.anim-slide{animation:slideIn .2s ease-out}
+/* キャラ・マシン設定 */
+.setup-panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
+.setup-row{display:flex;gap:16px;flex-wrap:wrap}
+.setup-item{flex:1;min-width:140px}
+.setup-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.setup-card{display:flex;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--radius);padding:8px 10px;cursor:pointer;transition:all .15s}
+.setup-card:hover{border-color:var(--yellow)}
+.setup-img{width:44px;height:44px;object-fit:contain;border-radius:6px;background:var(--card);flex-shrink:0}
+.setup-img-ph{width:44px;height:44px;border-radius:6px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.setup-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.setup-hint{font-size:10px;color:var(--text3);margin-top:2px}
+/* 設定モーダル */
+.modal-setup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:320px;overflow-y:auto;padding:2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.modal-setup-grid::-webkit-scrollbar{width:5px}
+.modal-setup-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.setup-opt{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:8px 6px;cursor:pointer;text-align:center;transition:all .15s}
+.setup-opt:hover{border-color:var(--yellow);transform:translateY(-1px)}
+.setup-opt.opt-sel{border-color:var(--yellow);background:rgba(245,197,24,.1)}
+.setup-opt-img{width:44px;height:44px;object-fit:contain;margin:0 auto 4px;display:block;border-radius:4px;background:var(--card)}
+.setup-opt-img-ph{width:44px;height:44px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:24px;border-radius:4px;background:var(--card)}
+.setup-opt-name{font-size:9px;font-weight:700;color:var(--text2);line-height:1.3;word-break:keep-all}
+.setup-edit-btn{font-size:9px;padding:2px 6px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;margin-top:4px;font-family:var(--font)}
+.setup-edit-btn:hover{color:var(--yellow);border-color:var(--yellow)}
+/* tier analysis */
+.tier-row{display:flex;align-items:stretch;gap:0;margin-bottom:10px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.tier-row-label{width:52px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mk);font-size:15px;font-weight:800;flex-shrink:0;border-right:1px solid var(--border)}
+.tier-row-body{flex:1;padding:10px 14px;background:var(--card)}
+.tier-row-stats{display:flex;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+.tier-row-stat{font-size:11px;color:var(--text2)}
+.tier-row-stat span{font-size:14px;font-weight:800;font-family:var(--font-mk);color:var(--text);margin-left:4px}
+.tier-mini-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tier-mini-label{font-size:10px;color:var(--text3);width:60px;font-weight:600}
+.tier-mini-track{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.tier-mini-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.tier-mini-val{font-size:10px;font-weight:700;width:36px;text-align:right;color:var(--text2)}
+.tier-no-data{font-size:11px;color:var(--text3);font-style:italic;padding:4px 0}
+.tier-section-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;margin-top:4px}
+.tier-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:1.5rem}
+.tier-summary-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.tier-pts-bar-wrap{margin-top:4px}
+@keyframes barGrow{from{width:0}to{width:var(--w)}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="mk-header">
+  <div class="mk-header-icon">🏎</div>
+  <div class="mk-header-body">
+    <div class="mk-header-title">MKW Tracker</div>
+    <div class="mk-header-sub">Mario Kart World &nbsp;·&nbsp; 24人 VS &nbsp;·&nbsp; 12 Race</div>
+  </div>
+  <div class="mk-header-badge">
+    <div class="mk-header-badge-item">Switch 2</div>
+    <div class="mk-header-badge-item">VS 24</div>
+  </div>
+</div>
+<div class="metrics" id="metrics"></div>
+<div class="tabs">
+  <button class="tab on" onclick="switchTab('session')">🏁 試合入力</button>
+  <button class="tab" onclick="switchTab('courses')">🗺 コース戦績</button>
+  <button class="tab" onclick="switchTab('matches')">📋 試合履歴</button>
+  <button class="tab" onclick="switchTab('ranking')">🏅 ランキング</button>
+  <button class="tab" onclick="switchTab('chart')">📊 グラフ</button>
+  <button class="tab" onclick="switchTab('tier')">🎯 Tier分析</button>
+</div>
+<div id="tab-session"><div id="session-area"></div></div>
+<div id="tab-courses" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div class="sec-lbl">コース戦績</div>
+    <button class="save-btn" onclick="openRoadModal()">＋ 道を追加</button>
+  </div>
+  <div class="course-grid" id="course-grid"></div>
+  <div id="detail" style="display:none"></div>
+</div>
+<div id="tab-matches" style="display:none">
+  <div class="sec-lbl" style="margin-bottom:12px">試合履歴（最新順）</div>
+  <div id="match-list"></div>
+</div>
+<div id="tab-ranking" style="display:none">
+  <div class="sec-lbl" style="margin-bottom:10px">コース別ランキング</div>
+  <div class="sort-bar">
+    <button class="sort-btn on" onclick="setSort('avg')">平均順位が良い順</button>
+    <button class="sort-btn" onclick="setSort('rate')">入賞率が高い順</button>
+    <button class="sort-btn" onclick="setSort('tries')">試行回数が多い順</button>
+  </div>
+  <div id="rank-list"></div>
+</div>
+<div id="tab-chart" style="display:none">
+  <div class="sec-lbl" style="margin-bottom:10px">平均順位（低いほど良い）</div>
+  <div id="chart-avg" style="margin-bottom:1.5rem"></div>
+  <div class="sec-lbl" style="margin-bottom:10px">12位以上入賞率（%）</div>
+  <div id="chart-rate"></div>
+</div>
+<div id="tab-tier" style="display:none">
+  <div id="tier-analysis"></div>
+</div>
+<div class="save-bar">
+  <button class="save-btn" onclick="exportData()">💾 データを保存</button>
+  <label class="save-btn" style="cursor:pointer">📂 データを読込<input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)"></label>
+</div>
+</div>
+
+<div id="modal-setup" class="mbg" style="display:none" onclick="closeMBg('modal-setup',event)">
+  <div class="modal" style="width:380px">
+    <div class="modal-title" id="setup-modal-title">キャラクターを選択</div>
+    <div class="modal-note" id="setup-modal-note">使用するキャラクターを選んでください。</div>
+    <div class="modal-setup-grid" id="setup-modal-grid"></div>
+    <div class="mact" style="margin-top:1rem;justify-content:space-between">
+      <button class="bc" onclick="openAddSetupItem()">＋ 追加</button>
+      <button class="bc" onclick="closeM('modal-setup')">閉じる</button>
+    </div>
+  </div>
+</div>
+<div id="modal-setup-add" class="mbg" style="display:none" onclick="closeMBg('modal-setup-add',event)">
+  <div class="modal">
+    <div class="modal-title" id="setup-add-title">キャラクターを追加</div>
+    <div class="fr"><label class="fl">名前</label><input type="text" id="setup-add-name" placeholder="例: キャラ名"></div>
+    <div class="fr"><label class="fl">絵文字（省略可）</label><input type="text" id="setup-add-emoji" placeholder="🏎️"></div>
+    <div class="fr"><label class="fl">画像URL（省略可）</label><input type="text" id="setup-add-imgurl" placeholder="https://..."></div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin:4px 0">または</div>
+    <div class="fr"><label class="fl">画像ファイル</label><input type="file" id="setup-add-imgfile" accept="image/*"></div>
+    <img id="setup-add-preview" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:var(--card);display:none;margin:6px auto">
+    <div class="mact"><button class="bc" onclick="closeM('modal-setup-add')">キャンセル</button><button class="bs" onclick="saveSetupItem()">追加</button></div>
+  </div>
+</div>
+<div id="modal-img-setup" class="mbg" style="display:none" onclick="closeMBg('modal-img-setup',event)">
+  <div class="modal">
+    <div class="modal-title" id="img-setup-title">画像を変更</div>
+    <div class="fr"><label class="fl">画像URL</label><input type="text" id="img-setup-url" placeholder="https://..."></div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin:4px 0">または</div>
+    <div class="fr"><label class="fl">ファイル</label><input type="file" id="img-setup-file" accept="image/*"></div>
+    <img id="img-setup-prev" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:var(--card);display:none;margin:6px auto">
+    <div class="mact"><button class="bc" onclick="closeM('modal-img-setup')">キャンセル</button><button class="bs-r" onclick="clearSetupImg()">削除</button><button class="bs" onclick="saveSetupImg()">適用</button></div>
+  </div>
+</div>
+<div id="modal-road" class="mbg" style="display:none" onclick="closeMBg('modal-road',event)">
+  <div class="modal">
+    <div class="modal-title">🛣️ 道コースを追加</div>
+    <div class="modal-note">始点と終点を選択してください。</div>
+    <div class="fr"><label class="fl">始点コース</label><select id="road-from"></select></div>
+    <div class="fr"><label class="fl">終点コース</label><select id="road-to"></select></div>
+    <div class="fr"><label class="fl">道の名前（省略可）</label><input type="text" id="road-name" placeholder="例: マリサ→クッパ 道"></div>
+    <div class="fr"><label class="fl">絵文字（省略可）</label><input type="text" id="road-emoji" placeholder="🛣️"></div>
+    <div class="mact"><button class="bc" onclick="closeM('modal-road')">キャンセル</button><button class="bs" onclick="saveRoad()">追加</button></div>
+  </div>
+</div>
+
+<div id="modal-img" class="mbg" style="display:none" onclick="closeMBg('modal-img',event)">
+  <div class="modal">
+    <div class="modal-title" id="img-modal-title">コース画像を変更</div>
+    <div class="modal-note">画像URLを貼り付けるか、ファイルを選んでください。</div>
+    <div class="fr"><label class="fl">画像URL</label><input type="text" id="img-url" placeholder="https://..."></div>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin:6px 0">または</div>
+    <div class="fr"><label class="fl">ファイルをアップロード</label><input type="file" id="img-file" accept="image/*"></div>
+    <img id="img-prev" class="img-prev" alt="プレビュー">
+    <div class="mact"><button class="bc" onclick="closeM('modal-img')">キャンセル</button><button class="bs-r" onclick="clearImg()">削除</button><button class="bs" onclick="saveImg()">適用</button></div>
+  </div>
+</div>
+
+<script>
+const RANK_PTS={1:15,2:12,3:10,4:9,5:9,6:8,7:8,8:7,9:7,10:6,11:6,12:6,13:5,14:5,15:5,16:4,17:4,18:4,19:3,20:3,21:3,22:2,23:2,24:1};
+function pts(rank){return RANK_PTS[rank]||1;}
+const CUPS=[
+  {name:'キノコカップ',courses:[
+    {id:'mario_bros',name:'マリオブラザーズサーキット',emoji:'🏟️',color:'#FAC775'},
+    {id:'shupopo',name:'シュポポコースター',emoji:'🚂',color:'#5DCAA5'},
+    {id:'dk_space',name:'DKうちゅうセンター',emoji:'🚀',color:'#7F77DD'},
+  ]},
+  {name:'フラワーカップ',courses:[
+    {id:'sansan',name:'サンサンさばく',emoji:'🌵',color:'#EF9F27'},
+    {id:'heiho',name:'ヘイホーカーニバル',emoji:'🎪',color:'#F0997B'},
+    {id:'wario_stadium',name:'ワリオスタジアム',emoji:'🏈',color:'#888780'},
+    {id:'killer_ship',name:'キラーシップ',emoji:'💣',color:'#D85A30'},
+  ]},
+  {name:'スターカップ',courses:[
+    {id:'dk_snow',name:'DKスノーマウンテン',emoji:'🏔️',color:'#B5D4F4'},
+    {id:'rosetta',name:'ロゼッタてんもんだい',emoji:'⭐',color:'#AFA9EC'},
+    {id:'ice_building',name:'アイスビルディング',emoji:'🧊',color:'#9FE1CB'},
+    {id:'wario_ship',name:'ワリオシップ',emoji:'⚓',color:'#D3D1C7'},
+  ]},
+  {name:'こうらカップ',courses:[
+    {id:'nokonoko',name:'ノコノコビーチ',emoji:'🐢',color:'#5DCAA5'},
+    {id:'riverside',name:'リバーサイドサファリ',emoji:'🦁',color:'#97C459'},
+    {id:'trophy_city',name:'トロフィーシティ',emoji:'🌃',color:'#378ADD'},
+    {id:'peach_stadium',name:'ピーチスタジアム',emoji:'🎀',color:'#ED93B1'},
+  ]},
+  {name:'バナナカップ',courses:[
+    {id:'peach_beach',name:'ピーチビーチ',emoji:'🌊',color:'#85B7EB'},
+    {id:'salty_town',name:'ソルティータウン',emoji:'⛵',color:'#5DCAA5'},
+    {id:'dino_jungle',name:'ディノディノジャングル',emoji:'🦕',color:'#97C459'},
+    {id:'hatena_temple',name:'ハテナしんでん',emoji:'❓',color:'#FAC775'},
+  ]},
+  {name:'このはカップ',courses:[
+    {id:'fukupuku',name:'プクプクフォールズ',emoji:'🐡',color:'#85B7EB'},
+    {id:'shonyu',name:'ショーニューロード',emoji:'🔴',color:'#F0997B'},
+    {id:'obake_cinema',name:'おばけシネマ',emoji:'👻',color:'#AFA9EC'},
+    {id:'honebone',name:'ホネホネツイスター',emoji:'💀',color:'#D3D1C7'},
+  ]},
+  {name:'サンダーカップ',courses:[
+    {id:'momo_country',name:'モーモーカントリー',emoji:'🐄',color:'#97C459'},
+    {id:'choco',name:'チョコマウンテン',emoji:'🍫',color:'#BA7517'},
+    {id:'kinopio',name:'キノピオファクトリー',emoji:'🏭',color:'#888780'},
+    {id:'koopa_castle',name:'クッパキャッスル',emoji:'🏰',color:'#D85A30'},
+  ]},
+  {name:'スペシャルカップ',courses:[
+    {id:'donguri',name:'どんぐりツリーハウス',emoji:'🌰',color:'#97C459'},
+    {id:'mario_circuit',name:'マリオサーキット',emoji:'🌸',color:'#ED93B1'},
+    {id:'rainbow_road',name:'レインボーロード',emoji:'🌈',color:'#D4537E'},
+  ]},
+];
+const BASE_COURSES=CUPS.flatMap(cup=>cup.courses.map(c=>({...c,cup:cup.name,isRoad:false})));
+let customRoads=[],courseRecords={},matchHistory=[],courseImages={};
+BASE_COURSES.forEach(c=>{courseRecords[c.id]=[];});
+let selCourse=null,sortMode='avg',imgTargetId=null,imgDataUrl=null;
+let session={races:[],date:new Date().toISOString().slice(0,10)};
+const TIERS=['F','EF','E','DE','D','CD','C','BC','B','A','S','X','SQ'];
+const TIER_LABEL={'F':'F','EF':'EF','E':'E','DE':'DE','D':'D','CD':'CD','C':'C','BC':'BC','B':'B','A':'A','S':'S','X':'X'};
+const DEFAULT_CHARS=[
+  {id:'mario',name:'マリオ',emoji:'🔴'},
+  {id:'luigi',name:'ルイージ',emoji:'🟢'},
+  {id:'peach',name:'ピーチ',emoji:'🎀'},
+  {id:'daisy',name:'デイジー',emoji:'🌼'},
+  {id:'rosalina',name:'ロゼッタ',emoji:'⭐'},
+  {id:'toad',name:'キノピオ',emoji:'🍄'},
+  {id:'toadette',name:'キノピコ',emoji:'🎀'},
+  {id:'yoshi',name:'ヨッシー',emoji:'🦕'},
+  {id:'birdo',name:'キャサリン',emoji:'🎀'},
+  {id:'wario',name:'ワリオ',emoji:'💛'},
+  {id:'waluigi',name:'ワルイージ',emoji:'🟣'},
+  {id:'donkeykong',name:'ドンキーコング',emoji:'🦍'},
+  {id:'diddy',name:'ディディーコング',emoji:'🐵'},
+  {id:'bowser',name:'クッパ',emoji:'🏰'},
+  {id:'bowserjr',name:'クッパJr',emoji:'🎪'},
+  {id:'koopa',name:'ノコノコ',emoji:'🐢'},
+  {id:'lakitu',name:'ジュゲム',emoji:'☁️'},
+  {id:'link',name:'リンク',emoji:'🗡️'},
+  {id:'isabelle',name:'しずえ',emoji:'🌿'},
+  {id:'villager',name:'むらびと',emoji:'🏘️'},
+  {id:'inkling',name:'インクリング',emoji:'🦑'},
+  {id:'pauline',name:'ポリーン',emoji:'🎤'},
+  {id:'mii',name:'Mii',emoji:'👤'},
+];
+const DEFAULT_KARTS=[
+  {id:'standard',name:'スタンダードカート',emoji:'🏎️'},
+  {id:'pipe',name:'パイプフレーム',emoji:'🔧'},
+  {id:'mach8',name:'マッハ8',emoji:'⚡'},
+  {id:'steeldriver',name:'スティールダイバー',emoji:'🚢'},
+  {id:'catcruiser',name:'キャットクルーザー',emoji:'🐱'},
+  {id:'circuit',name:'サーキットスペシャル',emoji:'🏁'},
+  {id:'tri',name:'トライスポット',emoji:'🔺'},
+  {id:'badwagon',name:'バッドワゴン',emoji:'💀'},
+  {id:'prancer',name:'Bダッシュ',emoji:'🅱️'},
+  {id:'biddybuggy',name:'コロコロキノピオ',emoji:'🐞'},
+  {id:'landship',name:'ランドシップ',emoji:'⚓'},
+  {id:'sneeker',name:'スニーカー',emoji:'👟'},
+  {id:'sportbike',name:'スポーツバイク',emoji:'🏍️'},
+  {id:'comet',name:'コメット',emoji:'☄️'},
+  {id:'mr-scooty',name:'Mr.スクーティ',emoji:'🛵'},
+  {id:'jet',name:'ジェットバイク',emoji:'✈️'},
+  {id:'yoshi_bike',name:'ヨッシーバイク',emoji:'🟢'},
+  {id:'master',name:'マスターサイクル',emoji:'👑'},
+];
+let chars=[...DEFAULT_CHARS];
+let karts=[...DEFAULT_KARTS];
+let charImages={};
+let kartImages={};
+let setupModalMode=null; // 'char' | 'kart' | 'char-img-ID' | 'kart-img-ID'
+let expandedMatch=null,selCourseId=null,selRank=null,editMatchId=null,selTier=null;
+let selChar=chars[0].id;
+let selKart=karts[0].id;
+
+function getAllCourses(){return[...BASE_COURSES,...customRoads];}
+function getUsedIds(){return new Set(session.races.map(r=>r.courseId));}
+function rankPill(r){const cls=r===1?'rk1':r===2?'rk2':r===3?'rk3':r<=12?'rk12':'rk-e';return`<span class="rk-pill ${cls}">${r}位</span>`;}
+function stats(recs){if(!recs||!recs.length)return null;const tries=recs.length,avg=recs.reduce((s,r)=>s+r.rank,0)/tries,rate=recs.filter(r=>r.rank<=12).length/tries*100;return{tries,avg,rate};}
+function badgeForCourse(id){const s=stats(courseRecords[id]);if(!s)return'<span class="badge b-none">未記録</span>';if(s.rate>=66)return`<span class="badge b-top">入賞率${Math.round(s.rate)}%</span>`;if(s.rate>=33)return`<span class="badge b-mid">入賞率${Math.round(s.rate)}%</span>`;return`<span class="badge b-low">入賞率${Math.round(s.rate)}%</span>`;}
+function thumbHtml(c,cls='cthumb',phCls='cthumb-ph'){const img=courseImages[c.id];return img?`<img class="${cls}" src="${img}" alt="${c.name}" onerror="this.style.display='none'">`:`<div class="${phCls}" style="background:${c.color||'#333'}22">${c.emoji}</div>`;}
+
+function renderMetrics(){
+  const allRecs=Object.values(courseRecords).flat();
+  const total=allRecs.length,topHalf=allRecs.filter(r=>r.rank<=12).length;
+  const topRate=total?Math.round(topHalf/total*100):0;
+  const avgs=Object.values(courseRecords).filter(r=>r.length>0).map(r=>r.reduce((s,x)=>s+x.rank,0)/r.length);
+  const overallAvg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'--';
+  const tm=matchHistory.length;
+  const avgPts=tm?(matchHistory.reduce((s,m)=>s+m.totalPts,0)/tm).toFixed(1):'--';
+  document.getElementById('metrics').innerHTML=`
+    <div class="mc"><div class="mc-lbl">試合数</div><div class="mc-val">${tm}</div><div class="mc-sub">記録済み</div></div>
+    <div class="mc"><div class="mc-lbl">平均得点</div><div class="mc-val">${avgPts}</div><div class="mc-sub">1試合あたり</div></div>
+    <div class="mc"><div class="mc-lbl">総合 平均順位</div><div class="mc-val">${overallAvg}</div><div class="mc-sub">24人中</div></div>
+    <div class="mc"><div class="mc-lbl">12位以上入賞率</div><div class="mc-val">${topRate}%</div><div class="mc-sub">${topHalf}/${total}レース</div></div>
+  `;
+}
+
+function renderSession(){
+  const used=getUsedIds();
+  const races=session.races,done=races.length;
+  const totalPts=races.reduce((s,r)=>s+pts(r.rank),0);
+  let raceListHtml=races.map((r,i)=>{const c=getAllCourses().find(x=>x.id===r.courseId);return`<div class="race-row"><div class="race-num">${i+1}</div><div class="race-course">${c?c.emoji+' '+c.name:'?'}</div>${rankPill(r.rank)}<div class="race-pts">+${pts(r.rank)}pt</div><button class="race-del" onclick="deleteRace(${i})">✕</button></div>`;}).join('');
+  let summaryHtml='';
+  if(done>0){
+    const top12=races.filter(r=>r.rank<=12).length;
+    const avgRank=(races.reduce((s,r)=>s+r.rank,0)/done).toFixed(1);
+    summaryHtml=`<div class="session-summary"><div><div class="ss-item">合計得点</div><div class="ss-val" style="color:#F5C518">${totalPts}pt</div></div><div><div class="ss-item">平均順位</div><div class="ss-val">${avgRank}位</div></div><div><div class="ss-item">12位以上</div><div class="ss-val">${top12}/${done}レース</div></div></div>`;
+  }
+  let pickerHtml='';
+  if(done<12){
+    const courseCards=getAllCourses().map(c=>{
+      const isUsed=used.has(c.id);
+      const img=courseImages[c.id];
+      const th=img?`<img class="cp-thumb" src="${img}" alt="${c.name}" onerror="this.style.display='none'">`:`<div class="cp-thumb-ph" style="background:${c.color||'#333'}22">${c.emoji}</div>`;
+      return`<div class="cp-card${c.isRoad?' road-type':''}${isUsed?' used':''}${selCourseId===c.id?' cp-sel':''}" onclick="pickCourse('${c.id}')">${th}<div class="cp-name">${c.name}</div>${isUsed?'<div class="cp-warn">⚠ 選択済み</div>':''}${c.isRoad?'<div class="cp-road-lbl">道</div>':''}</div>`;
+    }).join('');
+    let rankGridHtml='';
+    for(let r=1;r<=24;r++){
+      const cls=r<=3?'top3':r<=12?'top12':'';
+      rankGridHtml+=`<button class="rank-btn ${cls}${selRank===r?' rk-sel':''}" onclick="pickRank(${r})">${r}</button>`;
+    }
+    const canAdd=selCourseId&&selRank;
+    const selC=canAdd?getAllCourses().find(c=>c.id===selCourseId):null;
+    pickerHtml=`
+      <div class="picker-label">tier を選択</div>
+      <div class="tier-picker">${TIERS.map(t=>`<button class="tier-btn tier-${t}${selTier===t?' t-sel':''}" onclick="pickTier('${t}')">${t}</button>`).join('')}</div>
+      <div class="picker-label">レース \${done+1} — コースを選択</div>
+      <div class="course-picker-grid">${courseCards}</div>
+      <div class="picker-label">順位を選択</div>
+      <div class="rank-grid">${rankGridHtml}</div>
+      <div id="dup-warn" style="margin-top:8px;padding:7px 12px;background:rgba(196,36,45,.15);border:1px solid #c4242d;border-radius:8px;font-size:11px;font-weight:700;color:#ff8080;text-align:center;opacity:0;transition:opacity .3s">⚠ このコースは既に記録されています。このまま追加されます。</div>
+      <button class="add-race-btn" onclick="addRace()" ${canAdd?'':'disabled'}>${canAdd?`${selC?.emoji||''} レース${done+1}を追加 ＋${pts(selRank)}pt`:'コースと順位を選んでください'}</button>`;
+  }
+  const canFinish=done===12&&selTier;
+  const finishBtn=done===12?`<button class="finish-btn" onclick="finishSession()" ${canFinish?'':'disabled'} style="${canFinish?'':'opacity:.4;cursor:default;animation:none'}">${canFinish?'🏆 試合を完了して戦績に追加！':'🏆 tierを選択してください'}</button>`:'';
+  const cancelBtn=done>0?`<button class="reset-btn" onclick="cancelSession()">リセット</button>`:'';
+  document.getElementById('session-area').innerHTML=`
+    <div class="session-panel">
+      <div class="session-hdr">
+        <div><div class="session-title">🏁 試合入力</div><div class="session-prog">${done} / 12 レース完了</div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          ${cancelBtn}
+          <input type="date" value="${session.date}" onchange="session.date=this.value" style="font-size:12px;padding:6px 8px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-family:var(--font)">
+        </div>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(done/12*100)}%"></div></div>
+      ${renderSetupPanel()}
+      ${summaryHtml}
+      <div>${raceListHtml||'<div class="empty" style="padding:1rem">最初のコースを選択してください</div>'}</div>
+      ${pickerHtml}
+    </div>
+    ${finishBtn}
+  `;
+}
+
+function pickTier(t){selTier=t;renderSession();}
+function pickCourse(id){
+  const isUsed=getUsedIds().has(id);
+  if(isUsed){
+    // 既選択でも選べる — 控えめな警告を一瞬表示してから選択
+    selCourseId=id;
+    renderSession();
+    const warn=document.getElementById('dup-warn');
+    if(warn){warn.style.opacity='1';setTimeout(()=>{warn.style.opacity='0';},2200);}
+  } else {
+    selCourseId=id;
+    renderSession();
+  }
+  setTimeout(()=>{const el=document.querySelector('.rank-grid');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+}
+function pickRank(r){selRank=r;renderSession();}
+function addRace(){
+  if(!selCourseId||!selRank)return;
+  session.races.push({courseId:selCourseId,rank:selRank});
+  selCourseId=null;selRank=null;
+  renderSession();
+}
+function deleteRace(idx){session.races.splice(idx,1);selCourseId=null;selRank=null;renderSession();}
+function finishSession(){
+  if(session.races.length!==12){alert('12レース分の入力が必要です');return;}
+  const totalPts=session.races.reduce((s,r)=>s+pts(r.rank),0);
+  const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart};
+  matchHistory.unshift(match);
+  session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,memo:'試合 #'+matchHistory.length});});
+  session={races:[],date:new Date().toISOString().slice(0,10)};
+  selCourseId=null;selRank=null;selTier=null;
+  autoSave();renderMetrics();renderSession();
+  alert('🏆 試合を記録しました！ 合計 '+totalPts+' pt');
+}
+function cancelSession(){if(!confirm('リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10)};selCourseId=null;selRank=null;renderSession();}
+
+function renderCourseGrid(){
+  document.getElementById('course-grid').innerHTML=getAllCourses().map(c=>{
+    const sel=selCourse===c.id?' sel':'';
+    return`<div class="ccard${c.isRoad?' road-type':''}${sel}" onclick="selectCourse('${c.id}')">${c.isRoad?'<div class="road-badge">道</div>':''}${thumbHtml(c)}<button class="img-btn" onclick="event.stopPropagation();openImgModal('${c.id}')">画像変更</button><div class="cinfo"><div class="cname">${c.name}</div><div class="cmeta"><span class="ccup">${c.cup}</span>${badgeForCourse(c.id)}</div></div></div>`;
+  }).join('');
+}
+function selectCourse(id){
+  selCourse=id;renderCourseGrid();
+  const c=getAllCourses().find(x=>x.id===id);
+  const recs=courseRecords[id]||[],s=stats(recs);
+  const det=document.getElementById('detail');det.style.display='block';
+  const img=courseImages[id];
+  const iconHtml=img?`<img class="d-thumb" src="${img}" alt="${c.name}">`:`<div style="font-size:30px">${c.emoji}</div>`;
+  const histHtml=recs.length?recs.slice().reverse().map((r,i)=>`<div class="hist-row"><div class="h-num">${recs.length-i}</div>${rankPill(r.rank)}<div class="h-date">${r.date}${r.memo?' — '+r.memo:''}</div><button class="del-btn" onclick="delCourseRec('${id}',${recs.length-1-i})">✕</button></div>`).join(''):'<div class="empty">まだ記録がありません</div>';
+  const roadInfo=c.isRoad?`<div style="font-size:11px;color:var(--text2);margin-bottom:.75rem;display:flex;gap:6px;align-items:center;background:var(--bg2);padding:6px 10px;border-radius:8px;border:1px solid var(--border)"><span style="font-weight:700">${c.fromName}</span><span>→</span><span style="font-weight:700">${c.toName}</span><button class="del-btn" style="margin-left:auto" onclick="deleteRoad('${id}')">道を削除</button></div>`:'';
+  det.innerHTML=`<div class="detail anim-slide"><div class="d-hdr">${iconHtml}<div><div class="d-name">${c.name}</div><div class="d-cup">${c.cup}</div></div><div style="margin-left:auto"><button class="save-btn" onclick="openImgModal('${id}')">画像変更</button></div></div>${roadInfo}${s?`<div class="dstats"><div class="ds"><div class="ds-l">試行回数</div><div class="ds-v">${s.tries}回</div></div><div class="ds"><div class="ds-l">平均順位</div><div class="ds-v">${s.avg.toFixed(1)}位</div></div><div class="ds"><div class="ds-l">入賞率</div><div class="ds-v">${Math.round(s.rate)}%</div></div><div class="ds"><div class="ds-l">最高順位</div><div class="ds-v">${Math.min(...recs.map(r=>r.rank))}位</div></div></div>`:''}<div class="sec-lbl" style="margin-bottom:8px">レース履歴</div>${histHtml}</div>`;
+  det.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function delCourseRec(cid,idx){if(!confirm('この記録を削除しますか？'))return;courseRecords[cid].splice(idx,1);renderMetrics();renderCourseGrid();selectCourse(cid);autoSave();}
+
+function renderMatches(){
+  if(!matchHistory.length){document.getElementById('match-list').innerHTML='<div class="empty">まだ試合の記録がありません</div>';return;}
+  const maxPts=Math.max(...matchHistory.map(m=>m.totalPts));
+  document.getElementById('match-list').innerHTML=matchHistory.map((m,i)=>{
+    const ptsClass=m.totalPts>=maxPts*0.75?'pts-high':m.totalPts>=maxPts*0.5?'pts-mid':'pts-low';
+    const isExp=expandedMatch===m.id;
+    const detailHtml=isExp?`<div class="match-detail">${m.races.map((r,ri)=>{const c=getAllCourses().find(x=>x.id===r.courseId);return`<div class="match-race-row"><span style="width:24px;font-weight:700;font-family:var(--font-mk)">${ri+1}</span><span style="flex:1">${c?c.emoji+' '+c.name:'不明'}</span>${rankPill(r.rank)}<span style="width:40px;text-align:right;color:var(--yellow);font-weight:700">+${pts(r.rank)}pt</span></div>`;}).join('')}</div>`:'';
+    const tierBadge=m.tier?`<span class="tier-badge tier-${m.tier}" style="margin-left:6px">${m.tier}</span>`:'';
+    return`<div class="match-card" onclick="toggleMatch(${m.id})"><div class="match-hdr"><div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px"><span class="match-no">試合 #${matchHistory.length-i}</span>${tierBadge}<span style="font-size:11px;color:var(--text3);margin-left:2px">${m.date}</span></div><div style="display:flex;align-items:center;gap:8px"><div class="match-pts ${ptsClass}">${m.totalPts} pt</div><button class="save-btn" style="font-size:10px;padding:4px 10px" onclick="event.stopPropagation();openEditMatch(${m.id})">✏️ 訂正</button></div></div><div class="match-sub">${m.races.length}レース · 平均${(m.races.reduce((s,r)=>s+r.rank,0)/m.races.length).toFixed(1)}位 · 12位以上${m.races.filter(r=>r.rank<=12).length}/${m.races.length}レース${(()=>{const ch=chars.find(c=>c.id===m.charId);const kt=karts.find(k=>k.id===m.kartId);const parts=[ch?ch.emoji+ch.name:'',kt?kt.emoji+kt.name:''].filter(Boolean);return parts.length?' · '+parts.join(' / '):''})()}</div>${detailHtml}</div>`;
+  }).join('');
+}
+function toggleMatch(id){expandedMatch=expandedMatch===id?null:id;renderMatches();}
+
+function renderRanking(){
+  const items=getAllCourses().map(c=>({c,s:stats(courseRecords[c.id]||[])})).filter(x=>x.s);
+  if(sortMode==='avg')items.sort((a,b)=>a.s.avg-b.s.avg);
+  if(sortMode==='rate')items.sort((a,b)=>b.s.rate-a.s.rate);
+  if(sortMode==='tries')items.sort((a,b)=>b.s.tries-a.s.tries);
+  const medals=['🥇','🥈','🥉'];
+  const medalColors=['#F5C518','#85B7EB','#5dca8a'];
+  document.getElementById('rank-list').innerHTML=items.length?items.map((item,i)=>`<div class="rnk-row"><div style="font-size:16px;width:28px;text-align:center">${medals[i]||`<span style="font-size:13px;font-weight:700;color:var(--text3)">${i+1}</span>`}</div><div style="font-size:18px">${item.c.isRoad?'🛣️':item.c.emoji}</div><div style="flex:1"><div style="font-size:12px;font-weight:700">${item.c.name}</div><div style="font-size:10px;color:var(--text3)">${item.c.cup} · ${item.s.tries}回</div></div><div style="text-align:right"><div style="font-size:14px;font-weight:800;font-family:var(--font-mk);color:${medalColors[i]||'var(--text)'}">${sortMode==='avg'?item.s.avg.toFixed(1)+'位':sortMode==='rate'?Math.round(item.s.rate)+'%':item.s.tries+'回'}</div><div style="font-size:10px;color:var(--text3);margin-top:2px">${sortMode!=='avg'?'平均 '+item.s.avg.toFixed(1)+'位':'入賞率 '+Math.round(item.s.rate)+'%'}</div></div></div>`).join(''):'<div class="empty">まだ記録がありません</div>';
+}
+function setSort(mode){sortMode=mode;document.querySelectorAll('.sort-btn').forEach((btn,i)=>{btn.classList.toggle('on',['avg','rate','tries'][i]===mode);});renderRanking();}
+
+function renderChart(){
+  const items=getAllCourses().map(c=>({c,s:stats(courseRecords[c.id]||[])})).filter(x=>x.s);
+  const maxAvg=Math.max(...items.map(x=>x.s.avg),1);
+  document.getElementById('chart-avg').innerHTML=items.sort((a,b)=>a.s.avg-b.s.avg).map(item=>`<div class="bar-row"><div class="bar-lbl">${item.c.isRoad?'🛣️':item.c.emoji} ${item.c.name}</div><div class="bar-track"><div class="bar-avg" style="width:${Math.round(item.s.avg/maxAvg*100)}%"></div></div><div class="bar-val">${item.s.avg.toFixed(1)}位</div></div>`).join('')||'<div class="empty">まだ記録がありません</div>';
+  document.getElementById('chart-rate').innerHTML=items.sort((a,b)=>b.s.rate-a.s.rate).map(item=>`<div class="bar-row"><div class="bar-lbl">${item.c.isRoad?'🛣️':item.c.emoji} ${item.c.name}</div><div class="bar-track"><div class="bar-rate" style="width:${Math.round(item.s.rate)}%"></div></div><div class="bar-val">${Math.round(item.s.rate)}%</div></div>`).join('')||'<div class="empty">まだ記録がありません</div>';
+}
+
+function openRoadModal(){
+  const opts=BASE_COURSES.map(c=>`<option value="${c.id}">${c.emoji} ${c.name}</option>`).join('');
+  document.getElementById('road-from').innerHTML=opts;document.getElementById('road-to').innerHTML=opts;document.getElementById('road-to').selectedIndex=1;
+  document.getElementById('road-name').value='';document.getElementById('road-emoji').value='';
+  document.getElementById('modal-road').style.display='flex';
+}
+function saveRoad(){
+  const fromId=document.getElementById('road-from').value,toId=document.getElementById('road-to').value;
+  if(fromId===toId){alert('始点と終点が同じです');return;}
+  const fromC=BASE_COURSES.find(c=>c.id===fromId),toC=BASE_COURSES.find(c=>c.id===toId);
+  const name=document.getElementById('road-name').value.trim()||`${fromC.name.slice(0,5)}→${toC.name.slice(0,5)} 道`;
+  const id=`road_${fromId}_${toId}_${Date.now()}`;
+  customRoads.push({id,name,emoji:document.getElementById('road-emoji').value.trim()||'🛣️',color:'#9FE1CB',isRoad:true,cup:'道',fromId,toId,fromName:fromC.name,toName:toC.name});
+  courseRecords[id]=[];closeM('modal-road');renderCourseGrid();renderMetrics();renderSession();autoSave();
+}
+function deleteRoad(id){
+  if(!confirm('削除しますか？'))return;
+  customRoads=customRoads.filter(r=>r.id!==id);delete courseRecords[id];delete courseImages[id];
+  selCourse=null;document.getElementById('detail').style.display='none';
+  renderCourseGrid();renderMetrics();autoSave();
+}
+function openImgModal(id){
+  imgTargetId=id;imgDataUrl=null;
+  const c=getAllCourses().find(x=>x.id===id);
+  document.getElementById('img-modal-title').textContent=`${c.emoji} ${c.name} — 画像変更`;
+  document.getElementById('img-url').value=courseImages[id]&&!courseImages[id].startsWith('data:')?courseImages[id]:'';
+  document.getElementById('img-file').value='';
+  const prev=document.getElementById('img-prev');
+  if(courseImages[id]){prev.src=courseImages[id];prev.style.display='block';}else{prev.style.display='none';}
+  document.getElementById('modal-img').style.display='flex';
+}
+function saveImg(){
+  if(imgDataUrl)courseImages[imgTargetId]=imgDataUrl;
+  else{const url=document.getElementById('img-url').value.trim();if(url)courseImages[imgTargetId]=url;}
+  closeM('modal-img');renderCourseGrid();renderSession();if(selCourse===imgTargetId)selectCourse(imgTargetId);autoSave();
+}
+function clearImg(){delete courseImages[imgTargetId];closeM('modal-img');renderCourseGrid();renderSession();if(selCourse===imgTargetId)selectCourse(imgTargetId);autoSave();}
+document.getElementById('img-url').addEventListener('input',function(){const prev=document.getElementById('img-prev');if(this.value){prev.src=this.value;prev.style.display='block';}else prev.style.display='none';imgDataUrl=null;});
+document.getElementById('img-file').addEventListener('change',function(){const file=this.files[0];if(!file)return;const reader=new FileReader();reader.onload=e=>{imgDataUrl=e.target.result;const prev=document.getElementById('img-prev');prev.src=imgDataUrl;prev.style.display='block';};reader.readAsDataURL(file);});
+
+function switchTab(tab){
+  ['session','courses','matches','ranking','chart','tier'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===tab?'':'none';});
+  document.querySelectorAll('.tab').forEach((el,i)=>{el.classList.toggle('on',['session','courses','matches','ranking','chart','tier'][i]===tab);});
+  if(tab==='matches')renderMatches();if(tab==='ranking')renderRanking();if(tab==='chart')renderChart();if(tab==='tier')renderTierAnalysis();
+}
+function closeM(id){document.getElementById(id).style.display='none';}
+function closeMBg(id,e){if(e.target===document.getElementById(id))closeM(id);}
+
+function exportData(){
+  const data={courseRecords,matchHistory,customRoads,courseImages,exportedAt:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mkw_data_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(data.courseRecords)courseRecords={...courseRecords,...data.courseRecords};
+      if(data.matchHistory)matchHistory=data.matchHistory;
+      if(data.customRoads){customRoads=data.customRoads;customRoads.forEach(r=>{if(!courseRecords[r.id])courseRecords[r.id]=[];});}
+      if(data.chars)chars=data.chars;
+      if(data.karts)karts=data.karts;
+      if(data.charImages)charImages=data.charImages;
+      if(data.kartImages)kartImages=data.kartImages;
+      if(}
+    if(data.chars)chars=data.chars;
+    if(data.karts)karts=data.karts;
+    if(data.charImages)charImages=data.charImages;
+    if(data.kartImages)kartImages=data.kartImages;
+    if(chars.length>0&&!selChar)selChar=chars[0].id;
+    if(karts.length>0&&!selKart)selKart=karts[0].id;
+      if(data.courseImages)courseImages=data.courseImages;
+      renderMetrics();renderSession();renderCourseGrid();alert('データを読み込みました！');
+    }catch(err){alert('読み込みに失敗しました。');}
+  };reader.readAsText(file);input.value='';
+}
+
+function openEditMatch(id){
+  editMatchId=id;
+  const m=matchHistory.find(x=>x.id===id);
+  if(!m)return;
+  document.getElementById('edit-date').value=m.date;
+  const allC=getAllCourses();
+  const courseOpts=allC.map(c=>`<option value="${c.id}">${c.isRoad?'🛣️':c.emoji} ${c.name}</option>`).join('');
+  document.getElementById('edit-race-list').innerHTML=m.races.map((r,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);width:22px;text-align:center">${i+1}</div>
+      <select id="er-course-${i}" style="flex:1;font-size:11px;padding:5px 6px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-family:var(--font)">${courseOpts}</select>
+      <select id="er-rank-${i}" style="width:68px;font-size:12px;font-weight:700;padding:5px 6px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-family:var(--font)">${Array.from({length:24},(_,j)=>`<option value="${j+1}">${j+1}位</option>`).join('')}</select>
+    </div>`).join('');
+  // set current values
+  m.races.forEach((r,i)=>{
+    document.getElementById(`er-course-${i}`).value=r.courseId;
+    document.getElementById(`er-rank-${i}`).value=r.rank;
+  });
+  // render tier picker
+  document.getElementById('edit-tier-picker').innerHTML=TIERS.map(t=>`<button class="tier-btn tier-${t}${m.tier===t?' t-sel':''}" onclick="setEditTier('${t}')">${t}</button>`).join('');
+  document.getElementById('modal-edit').style.display='flex';
+}
+function setEditTier(t){
+  const m=matchHistory.find(x=>x.id===editMatchId);
+  if(m)m.tier=t;
+  document.getElementById('edit-tier-picker').querySelectorAll('.tier-btn').forEach(btn=>{
+    btn.classList.toggle('t-sel',btn.textContent===t);
+  });
+}
+function saveEditMatch(){
+  const m=matchHistory.find(x=>x.id===editMatchId);
+  if(!m)return;
+  // remove old records from courseRecords
+  m.races.forEach(r=>{
+    if(courseRecords[r.courseId]){
+      const memo='試合 #'+(matchHistory.length-matchHistory.indexOf(m));
+      const idx=courseRecords[r.courseId].findIndex(x=>x.date===m.date&&x.memo===memo);
+      if(idx>=0)courseRecords[r.courseId].splice(idx,1);
+    }
+  });
+  // update match
+  const newDate=document.getElementById('edit-date').value;
+  const matchIdx=matchHistory.indexOf(m);
+  const matchNum=matchHistory.length-matchIdx;
+  m.races=m.races.map((_,i)=>({
+    courseId:document.getElementById(`er-course-${i}`).value,
+    rank:parseInt(document.getElementById(`er-rank-${i}`).value)
+  }));
+  m.date=newDate;
+  m.totalPts=m.races.reduce((s,r)=>s+pts(r.rank),0);
+  // re-add to courseRecords
+  m.races.forEach(r=>{
+    if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];
+    courseRecords[r.courseId].push({rank:r.rank,date:newDate,memo:'試合 #'+matchNum});
+  });
+  closeM('modal-edit');
+  autoSave();renderMetrics();renderMatches();renderCourseGrid();
+  alert('訂正しました！ 合計 '+m.totalPts+' pt');
+}
+function deleteMatch(){
+  const m=matchHistory.find(x=>x.id===editMatchId);
+  if(!m||!confirm('この試合の記録を削除しますか？コース戦績からも削除されます。'))return;
+  const matchIdx=matchHistory.indexOf(m);
+  const matchNum=matchHistory.length-matchIdx;
+  m.races.forEach(r=>{
+    if(courseRecords[r.courseId]){
+      const memo='試合 #'+matchNum;
+      const idx=courseRecords[r.courseId].findIndex(x=>x.date===m.date&&x.memo===memo);
+      if(idx>=0)courseRecords[r.courseId].splice(idx,1);
+    }
+  });
+  matchHistory.splice(matchIdx,1);
+  closeM('modal-edit');
+  autoSave();renderMetrics();renderMatches();renderCourseGrid();
+}
+function renderSetupPanel(){
+  const ch=chars.find(c=>c.id===selChar)||chars[0];
+  const kt=karts.find(k=>k.id===selKart)||karts[0];
+  const chImg=charImages[ch.id];
+  const ktImg=kartImages[kt.id];
+  const chThumb=chImg?`<img class="setup-img" src="\${chImg}" alt="\${ch.name}" onerror="this.style.display='none'">`:`<div class="setup-img-ph">\${ch.emoji}</div>`;
+  const ktThumb=ktImg?`<img class="setup-img" src="\${ktImg}" alt="\${kt.name}" onerror="this.style.display='none'">`:`<div class="setup-img-ph">\${kt.emoji}</div>`;
+  return`<div class="setup-panel">
+    <div class="setup-row">
+      <div class="setup-item">
+        <div class="setup-label">キャラクター</div>
+        <div class="setup-card" onclick="openSetupModal('char')">
+          \${chThumb}
+          <div><div class="setup-name">\${ch.name}</div><div class="setup-hint">タップして変更</div></div>
+        </div>
+      </div>
+      <div class="setup-item">
+        <div class="setup-label">マシン</div>
+        <div class="setup-card" onclick="openSetupModal('kart')">
+          \${ktThumb}
+          <div><div class="setup-name">\${kt.name}</div><div class="setup-hint">タップして変更</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+function openSetupModal(mode){
+  setupModalMode=mode;
+  const isChar=mode==='char';
+  const list=isChar?chars:karts;
+  const imgMap=isChar?charImages:kartImages;
+  const sel=isChar?selChar:selKart;
+  document.getElementById('setup-modal-title').textContent=isChar?'キャラクターを選択':'マシンを選択';
+  document.getElementById('setup-modal-note').textContent=isChar?'使用するキャラクターを選んでください。':'使用するマシンを選んでください。';
+  document.getElementById('setup-modal-grid').innerHTML=list.map(item=>{
+    const img=imgMap[item.id];
+    const thumb=img?`<img class="setup-opt-img" src="\${img}" alt="\${item.name}" onerror="this.style.display='none'">`:`<div class="setup-opt-img-ph">\${item.emoji}</div>`;
+    return`<div class="setup-opt\${sel===item.id?' opt-sel':''}" onclick="selectSetupItem('\${item.id}')">
+      \${thumb}
+      <div class="setup-opt-name">\${item.name}</div>
+      <button class="setup-edit-btn" onclick="event.stopPropagation();openSetupImgModal('\${item.id}','\${mode}')">画像変更</button>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-setup').style.display='flex';
+}
+function selectSetupItem(id){
+  if(setupModalMode==='char') selChar=id;
+  else selKart=id;
+  closeM('modal-setup');
+  renderSession();
+}
+let setupAddDataUrl=null;
+function openAddSetupItem(){
+  const isChar=setupModalMode==='char';
+  document.getElementById('setup-add-title').textContent=isChar?'キャラクターを追加':'マシンを追加';
+  document.getElementById('setup-add-name').value='';
+  document.getElementById('setup-add-emoji').value='';
+  document.getElementById('setup-add-imgurl').value='';
+  document.getElementById('setup-add-imgfile').value='';
+  document.getElementById('setup-add-preview').style.display='none';
+  setupAddDataUrl=null;
+  document.getElementById('modal-setup-add').style.display='flex';
+}
+function saveSetupItem(){
+  const isChar=setupModalMode==='char';
+  const name=document.getElementById('setup-add-name').value.trim();
+  if(!name){alert('名前を入力してください');return;}
+  const emoji=document.getElementById('setup-add-emoji').value.trim()||'🏎️';
+  const id=(isChar?'char_':'kart_')+Date.now();
+  const imgUrl=document.getElementById('setup-add-imgurl').value.trim();
+  const imgSrc=setupAddDataUrl||imgUrl||null;
+  if(isChar){chars.push({id,name,emoji});if(imgSrc)charImages[id]=imgSrc;}
+  else{karts.push({id,name,emoji});if(imgSrc)kartImages[id]=imgSrc;}
+  closeM('modal-setup-add');
+  openSetupModal(setupModalMode);
+  autoSave();
+}
+document.getElementById('setup-add-imgurl').addEventListener('input',function(){
+  const prev=document.getElementById('setup-add-preview');
+  if(this.value){prev.src=this.value;prev.style.display='block';}else prev.style.display='none';
+  setupAddDataUrl=null;
+});
+document.getElementById('setup-add-imgfile').addEventListener('change',function(){
+  const file=this.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{setupAddDataUrl=e.target.result;const prev=document.getElementById('setup-add-preview');prev.src=setupAddDataUrl;prev.style.display='block';};
+  reader.readAsDataURL(file);
+});
+let setupImgTargetId=null,setupImgMode=null,setupImgDataUrl=null;
+function openSetupImgModal(id,mode){
+  setupImgTargetId=id;setupImgMode=mode;setupImgDataUrl=null;
+  const imgMap=mode==='char'?charImages:kartImages;
+  const item=(mode==='char'?chars:karts).find(x=>x.id===id);
+  document.getElementById('img-setup-title').textContent=`\${item?.name||''}の画像を変更`;
+  document.getElementById('img-setup-url').value=imgMap[id]&&!imgMap[id].startsWith('data:')?imgMap[id]:'';
+  document.getElementById('img-setup-file').value='';
+  const prev=document.getElementById('img-setup-prev');
+  if(imgMap[id]){prev.src=imgMap[id];prev.style.display='block';}else prev.style.display='none';
+  document.getElementById('modal-img-setup').style.display='flex';
+}
+function saveSetupImg(){
+  const imgMap=setupImgMode==='char'?charImages:kartImages;
+  if(setupImgDataUrl)imgMap[setupImgTargetId]=setupImgDataUrl;
+  else{const url=document.getElementById('img-setup-url').value.trim();if(url)imgMap[setupImgTargetId]=url;}
+  closeM('modal-img-setup');
+  openSetupModal(setupImgMode);
+  autoSave();
+}
+function clearSetupImg(){
+  const imgMap=setupImgMode==='char'?charImages:kartImages;
+  delete imgMap[setupImgTargetId];
+  closeM('modal-img-setup');
+  openSetupModal(setupImgMode);
+  autoSave();
+}
+document.getElementById('img-setup-url').addEventListener('input',function(){
+  const prev=document.getElementById('img-setup-prev');
+  if(this.value){prev.src=this.value;prev.style.display='block';}else prev.style.display='none';
+  setupImgDataUrl=null;
+});
+document.getElementById('img-setup-file').addEventListener('change',function(){
+  const file=this.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{setupImgDataUrl=e.target.result;const prev=document.getElementById('img-setup-prev');prev.src=setupImgDataUrl;prev.style.display='block';};
+  reader.readAsDataURL(file);
+});
+function getTierColor(t){
+  const map={X:'#ff4ecd',S:'#ff6b35',A:'#F5C518',B:'#5dca8a',BC:'#4ab89a',C:'#378ADD',CD:'#5a7acc',D:'#8a7acc',DE:'#aa6aaa',E:'#cc6688',EF:'#aaaaaa',F:'#666666',SQ:'#00e5ff'};
+  return map[t]||'#888';
+}
+function renderTierAnalysis(){
+  const el=document.getElementById('tier-analysis');
+  if(!el)return;
+  const allTiers=[...TIERS];
+  // tierごとに試合を集計
+  const tierMatches={};
+  allTiers.forEach(t=>{tierMatches[t]=[];});
+  matchHistory.forEach(m=>{if(m.tier&&tierMatches[m.tier])tierMatches[m.tier].push(m);});
+  const played=allTiers.filter(t=>tierMatches[t].length>0);
+  if(!played.length){el.innerHTML='<div class="empty">まだ試合の記録がありません</div>';return;}
+  // 全体サマリー
+  const allPts=matchHistory.filter(m=>m.tier).map(m=>m.totalPts);
+  const globalMax=allPts.length?Math.max(...allPts):1;
+  const globalMin=allPts.length?Math.min(...allPts):0;
+  // best tier (最高平均得点)
+  const tierAvgPts=played.map(t=>{
+    const ms=tierMatches[t];
+    return{t,avg:ms.reduce((s,m)=>s+m.totalPts,0)/ms.length,count:ms.length};
+  });
+  tierAvgPts.sort((a,b)=>b.avg-a.avg);
+  const bestTier=tierAvgPts[0];
+  // サマリーカード
+  let summaryHtml=`<div class="tier-summary-grid">
+    <div class="tier-summary-card">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">最多出場tier</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-mk);font-size:22px;color:${getTierColor(tierAvgPts.sort((a,b)=>b.count-a.count)[0].t)}">${tierAvgPts.sort((a,b)=>b.count-a.count)[0].t}</span>
+        <span style="font-size:12px;color:var(--text2)">${tierAvgPts.sort((a,b)=>b.count-a.count)[0].count}試合</span>
+      </div>
+    </div>
+    <div class="tier-summary-card">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">最高平均得点tier</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-mk);font-size:22px;color:${getTierColor(bestTier.t)}">${bestTier.t}</span>
+        <span style="font-size:12px;color:var(--text2)">${bestTier.avg.toFixed(1)}pt avg</span>
+      </div>
+    </div>
+    <div class="tier-summary-card">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">最高得点</div>
+      <div style="display:flex;align-items:baseline;gap:8px">
+        <span style="font-family:var(--font-mk);font-size:22px;color:var(--yellow)">${globalMax}pt</span>
+        <span style="font-size:11px;color:var(--text3)">${(()=>{const m=matchHistory.filter(x=>x.tier).find(x=>x.totalPts===globalMax);return m?m.tier+' '+m.date:'';})()}</span>
+      </div>
+    </div>
+    <div class="tier-summary-card">
+      <div style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">参加tier数</div>
+      <div style="font-family:var(--font-mk);font-size:22px;color:var(--text)">${played.length}<span style="font-size:13px;color:var(--text2);margin-left:4px">/ ${allTiers.length}</span></div>
+    </div>
+  </div>`;
+  // tier別詳細行
+  // 表示順：出現したtierをTIERS順で
+  const orderedPlayed=allTiers.filter(t=>tierMatches[t].length>0);
+  const maxAvgPts=Math.max(...orderedPlayed.map(t=>{const ms=tierMatches[t];return ms.reduce((s,m)=>s+m.totalPts,0)/ms.length;}));
+  const maxAvgRank=Math.max(...orderedPlayed.map(t=>{const ms=tierMatches[t];const allR=ms.flatMap(m=>m.races.map(r=>r.rank));return allR.reduce((s,r)=>s+r,0)/allR.length;}));
+  let rowsHtml=orderedPlayed.map(t=>{
+    const ms=tierMatches[t];
+    const allRanks=ms.flatMap(m=>m.races.map(r=>r.rank));
+    const avgRank=allRanks.reduce((s,r)=>s+r,0)/allRanks.length;
+    const top12Rate=allRanks.filter(r=>r<=12).length/allRanks.length*100;
+    const avgPts=ms.reduce((s,m)=>s+m.totalPts,0)/ms.length;
+    const maxPts=Math.max(...ms.map(m=>m.totalPts));
+    const minPts=Math.min(...ms.map(m=>m.totalPts));
+    const color=getTierColor(t);
+    // 得点推移（最大10試合）
+    const recent=ms.slice(-10);
+    const ptMax=Math.max(...recent.map(m=>m.totalPts),1);
+    const sparkW=180,sparkH=36;
+    let sparkPath='';
+    if(recent.length>=2){
+      const pts2=recent.map((m,i)=>({x:Math.round(i/(recent.length-1)*(sparkW-4)+2),y:Math.round(sparkH-2-(m.totalPts-minPts)/(ptMax-minPts+1)*(sparkH-4))}));
+      sparkPath='M'+pts2.map(p=>p.x+','+p.y).join(' L');
+    }
+    const spark=recent.length>=2?`<svg width="${sparkW}" height="${sparkH}" style="display:block;margin-top:6px"><polyline points="${recent.map((m,i)=>Math.round(i/(recent.length-1)*(sparkW-4)+2)+','+(Math.round(sparkH-2-(m.totalPts-minPts)/(ptMax-minPts+1)*(sparkH-4)))).join(' ')}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round"/>${recent.map((m,i)=>`<circle cx="${Math.round(i/(recent.length-1)*(sparkW-4)+2)}" cy="${Math.round(sparkH-2-(m.totalPts-minPts)/(ptMax-minPts+1)*(sparkH-4))}" r="2.5" fill="${color}"/>`).join('')}</svg>`:'';
+    return`<div class="tier-row anim-slide">
+      <div class="tier-row-label" style="background:${color}18;color:${color}">${t}</div>
+      <div class="tier-row-body">
+        <div class="tier-row-stats">
+          <div class="tier-row-stat">試合数<span>${ms.length}</span></div>
+          <div class="tier-row-stat">平均得点<span>${avgPts.toFixed(1)}pt</span></div>
+          <div class="tier-row-stat">最高<span>${maxPts}pt</span></div>
+          <div class="tier-row-stat">最低<span>${minPts}pt</span></div>
+          <div class="tier-row-stat">平均順位<span>${avgRank.toFixed(1)}位</span></div>
+          <div class="tier-row-stat">12位以上<span>${Math.round(top12Rate)}%</span></div>
+        </div>
+        <div class="tier-mini-bar-wrap">
+          <div class="tier-mini-label">平均得点</div>
+          <div class="tier-mini-track"><div class="tier-mini-fill" style="width:${Math.round(avgPts/maxAvgPts*100)}%;background:${color}"></div></div>
+          <div class="tier-mini-val">${avgPts.toFixed(1)}pt</div>
+        </div>
+        <div class="tier-mini-bar-wrap">
+          <div class="tier-mini-label">平均順位</div>
+          <div class="tier-mini-track"><div class="tier-mini-fill" style="width:${Math.round(avgRank/24*100)}%;background:${color}88"></div></div>
+          <div class="tier-mini-val">${avgRank.toFixed(1)}位</div>
+        </div>
+        <div class="tier-mini-bar-wrap">
+          <div class="tier-mini-label">入賞率</div>
+          <div class="tier-mini-track"><div class="tier-mini-fill" style="width:${Math.round(top12Rate)}%;background:${color}66"></div></div>
+          <div class="tier-mini-val">${Math.round(top12Rate)}%</div>
+        </div>
+        ${spark?`<div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-top:8px;margin-bottom:2px">得点推移（直近${recent.length}試合）</div>${spark}`:''}
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="tier-section-title" style="margin-bottom:14px">Tier 別 成績サマリー</div>
+    ${summaryHtml}
+    <div class="tier-section-title">Tier 別 詳細</div>
+    ${rowsHtml}
+  `;
+}
+function autoSave(){try{localStorage.setItem('mkw_tracker',JSON.stringify({courseRecords,matchHistory,customRoads,courseImages,chars,karts,charImages,kartImages}));}catch(e){}}
+function autoLoad(){
+  try{
+    const raw=localStorage.getItem('mkw_tracker');if(!raw)return;
+    const data=JSON.parse(raw);
+    if(data.courseRecords)courseRecords={...courseRecords,...data.courseRecords};
+    if(data.matchHistory)matchHistory=data.matchHistory;
+    if(data.customRoads){customRoads=data.customRoads;customRoads.forEach(r=>{if(!courseRecords[r.id])courseRecords[r.id]=[];});}
+    if(data.chars)chars=data.chars;
+    if(data.karts)karts=data.karts;
+    if(data.charImages)charImages=data.charImages;
+    if(data.kartImages)kartImages=data.kartImages;
+    if(chars.length>0&&!selChar)selChar=chars[0].id;
+    if(karts.length>0&&!selKart)selKart=karts[0].id;
+    if(data.courseImages)courseImages=data.courseImages;
+  }catch(e){}
+}
+
+autoLoad();renderMetrics();renderSession();renderCourseGrid();
+</script>
+
+<div id="modal-edit" class="mbg" style="display:none" onclick="closeMBg('modal-edit',event)">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">✏️ 試合を訂正</div>
+    <div class="modal-note">レースの順位・コースを変更できます。変更後「保存」してください。</div>
+    <div id="edit-race-list"></div>
+    <div class="fr" style="margin-top:12px"><label class="fl">Tier</label>
+    <div class="tier-picker" id="edit-tier-picker"></div></div>
+    <div class="fr"><label class="fl">日付</label><input type="date" id="edit-date"></div>
+    <div class="mact">
+      <button class="bc" onclick="closeM('modal-edit')">キャンセル</button>
+      <button class="bs-r" onclick="deleteMatch()" style="margin-right:auto">試合を削除</button>
+      <button class="bs" onclick="saveEditMatch()">保存</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
