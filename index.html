@@ -124,21 +124,31 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .finish-btn:hover{transform:translateY(-2px) scale(1.01)}
 .reset-btn{padding:6px 12px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid #ff6b6b;background:transparent;color:#ff6b6b;cursor:pointer;transition:all .15s}
 .reset-btn:hover{background:rgba(255,107,107,.15)}
-/* コース戦績 */
-.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:10px;margin-bottom:1.25rem}
-.ccard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:all .2s;position:relative}
-.ccard:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:var(--shadow)}
+/* コース戦績カード — cp-cardと同等の縦横比に */
+.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:1.25rem}
+.ccard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .18s;position:relative}
+.ccard:hover{border-color:var(--yellow);transform:translateY(-2px);box-shadow:0 4px 16px rgba(245,197,24,.2)}
 .ccard.sel{border:2px solid var(--yellow);box-shadow:0 0 16px rgba(245,197,24,.3)}
 .ccard.road-type{border-style:dashed}
-.cthumb{width:100%;height:70px;object-fit:cover;display:block}
-.cthumb-ph{width:100%;height:70px;display:flex;align-items:center;justify-content:center;font-size:26px}
-.img-btn{position:absolute;top:5px;right:5px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:6px;padding:3px 7px;font-size:9px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .15s}
+.cthumb{width:100%;height:54px;object-fit:cover;display:block}
+.cthumb-ph{width:100%;height:54px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.img-btn{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:5px;padding:2px 6px;font-size:9px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .15s}
 .ccard:hover .img-btn{opacity:1}
-.road-badge{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.65);color:var(--yellow);font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700}
-.cinfo{padding:9px 11px}
-.cname{font-size:12px;font-weight:700;margin-bottom:5px;line-height:1.3}
+.road-badge{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.65);color:var(--yellow);font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700}
+.cinfo{padding:5px 7px}
+.cname{font-size:11px;font-weight:700;margin-bottom:4px;line-height:1.3}
 .cmeta{display:flex;justify-content:space-between;align-items:center}
 .ccup{font-size:10px;color:var(--text3)}
+/* 道モード */
+.road-mode-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(159,225,203,.08);border:1.5px solid rgba(159,225,203,.35);border-radius:var(--radius);margin-bottom:10px;flex-wrap:wrap}
+.road-mode-btn{padding:7px 14px;font-size:12px;font-weight:800;border-radius:8px;border:2px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .18s;font-family:var(--font-mk)}
+.road-mode-btn.on{border-color:#9FE1CB;background:rgba(159,225,203,.18);color:#9FE1CB;box-shadow:0 0 12px rgba(159,225,203,.25)}
+.road-mode-step{font-size:11px;color:#9FE1CB;font-weight:700}
+.road-sel-from,.road-sel-to{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:var(--bg);border:1px solid var(--border2)}
+.road-sel-from.filled{border-color:#9FE1CB;color:#9FE1CB}
+.road-sel-to.filled{border-color:var(--yellow);color:var(--yellow)}
+.cp-card.road-from-sel{border-color:#9FE1CB!important;background:rgba(159,225,203,.12)!important;box-shadow:0 0 12px rgba(159,225,203,.3)!important}
+.cp-card.road-to-sel{border-color:var(--yellow)!important;background:rgba(245,197,24,.1)!important;box-shadow:0 0 12px rgba(245,197,24,.3)!important}
 .badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
 .b-none{background:var(--bg);color:var(--text3)}
 .b-top{background:#3d2800;color:#F5C518;border:1px solid #F5C518}
@@ -384,6 +394,32 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   </div>
 </div>
 
+
+<div id="modal-edit" class="mbg" style="display:none" onclick="closeMBg('modal-edit',event)">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">✏️ 試合を訂正</div>
+    <div class="modal-note">順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。</div>
+    <div id="edit-race-list"></div>
+    <div class="fr" style="margin-top:12px">
+      <label class="fl">キャラクター</label>
+      <select id="edit-char" style="width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font)"></select>
+    </div>
+    <div class="fr">
+      <label class="fl">マシン</label>
+      <select id="edit-kart" style="width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font)"></select>
+    </div>
+    <div class="fr"><label class="fl">試合メモ</label>
+    <input type="text" id="edit-memo" placeholder="メモ（任意）"></div>
+    <div class="fr"><label class="fl">Tier</label>
+    <div class="tier-picker" id="edit-tier-picker"></div></div>
+    <div class="fr"><label class="fl">日付</label><input type="date" id="edit-date"></div>
+    <div class="mact">
+      <button class="bc" onclick="closeM('modal-edit')">キャンセル</button>
+      <button class="bs-r" onclick="deleteMatch()" style="margin-right:auto">試合を削除</button>
+      <button class="bs" onclick="saveEditMatch()">保存</button>
+    </div>
+  </div>
+</div>
 <script>
 const RANK_PTS={1:15,2:12,3:10,4:9,5:9,6:8,7:8,8:7,9:7,10:6,11:6,12:6,13:5,14:5,15:5,16:4,17:4,18:4,19:3,20:3,21:3,22:2,23:2,24:1};
 function pts(rank){return RANK_PTS[rank]||1;}
@@ -545,6 +581,8 @@ let setupModalMode=null; // 'char' | 'kart' | 'char-img-ID' | 'kart-img-ID'
 let expandedMatch=null,selCourseId=null,selRank=null,editMatchId=null,selTier=null;
 let selChar=chars[0].id;
 let selKart=karts[0].id;
+// 道モード
+let roadMode=false,roadFrom=null,roadTo=null;
 
 function getAllCourses(){return[...BASE_COURSES,...customRoads];}
 function getUsedIds(){return new Set(session.races.map(r=>r.courseId));}
@@ -568,6 +606,9 @@ function renderMetrics(){
     +'<div class="mc"><div class="mc-lbl">'+topN+'位以上入賞率</div><div class="mc-val">'+topRate+'%</div><div class="mc-sub">'+topHalf+'/'+total+'レース</div></div>';
 }
 
+// 50音ソート
+function kanaSort(a,b){return a.name.localeCompare(b.name,'ja');}
+
 function renderSession(){
   const used=getUsedIds();
   const races=session.races,done=races.length;
@@ -577,56 +618,89 @@ function renderSession(){
   if(done>0){
     const top12=races.filter(r=>r.rank<=topN).length;
     const avgRank=(races.reduce((s,r)=>s+r.rank,0)/done).toFixed(1);
-    summaryHtml='<div class="session-summary">'+'<div><div class="ss-item">合計得点</div><div class="ss-val" style="color:#F5C518">'+totalPts+'pt</div></div>'+'<div><div class="ss-item">平均順位</div><div class="ss-val">'+avgRank+'位</div></div>'+'<div><div class="ss-item">'+topN+'位以上</div><div class="ss-val">'+top12+'/'+done+'レース</div></div>'+'</div>';
+    summaryHtml='<div class="session-summary"><div><div class="ss-item">合計得点</div><div class="ss-val" style="color:#F5C518">'+totalPts+'pt</div></div><div><div class="ss-item">平均順位</div><div class="ss-val">'+avgRank+'位</div></div><div><div class="ss-item">'+topN+'位以上</div><div class="ss-val">'+top12+'/'+done+'レース</div></div></div>';
   }
+
+  // キャラ・マシン・Tier・入賞基準 → 常時表示（12コース後も変更可）
+  var setupPanelHtml=renderSetupPanel();
+
+  // Tier picker（常時表示）
+  var tierBtns=TIERS.map(function(t){
+    var tSel=selTier===t?' t-sel':'';
+    return '<button class="tier-btn tier-'+t+tSel+'" onclick="pickTier(\''+t+'\')">'+t+'</button>';
+  }).join('');
+  var tierHtml='<div class="picker-label">Tier を選択</div><div class="tier-picker">'+tierBtns+'</div>';
+
   let pickerHtml='';
   if(done<12){
-    const courseCards=getAllCourses().map(c=>{
+    // 50音ソートしたコース一覧
+    const sortedCourses=getAllCourses().slice().sort(kanaSort);
+    const courseCards=sortedCourses.map(c=>{
       const isUsed=used.has(c.id);
       const img=courseImages[c.id];
       var th=img?('<img class="cp-thumb" src="'+img+'" alt="'+c.name+'" onerror="this.style.display=\'none\'">'):('<div class="cp-thumb-ph" style="background:'+(c.color||'#333')+'22">'+c.emoji+'</div>');
-      return '<div class="cp-card'+(c.isRoad?' road-type':'')+(isUsed?' used':'')+(selCourseId===c.id?' cp-sel':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer">'
-      +th
-      +'<div class="cp-name">'+c.name+'</div>'
-      +(isUsed?'<div class="cp-warn">⚠ 選択済み</div>':'')
-      +(c.isRoad?'<div class="cp-road-lbl">道</div>':'')
-      +'</div>';
+      // 道モード時のクラス付与
+      var roadCls='';
+      if(roadMode){
+        if(roadFrom===c.id) roadCls=' road-from-sel';
+        else if(roadTo===c.id) roadCls=' road-to-sel';
+      }
+      var normalSel=(!roadMode&&selCourseId===c.id)?' cp-sel':'';
+      return '<div class="cp-card'+(c.isRoad?' road-type':'')+normalSel+roadCls+(isUsed?' used':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer">'
+        +th
+        +'<div class="cp-name">'+c.name+'</div>'
+        +(isUsed&&!roadMode?'<div class="cp-warn">⚠ 選択済み</div>':'')
+        +(c.isRoad?'<div class="cp-road-lbl">道</div>':'')
+        +'</div>';
     }).join('');
+
+    // 道モードバー
+    var fromC=roadFrom?getAllCourses().find(c=>c.id===roadFrom):null;
+    var toC=roadTo?getAllCourses().find(c=>c.id===roadTo):null;
+    var roadModeBar='<div class="road-mode-bar">'
+      +'<button class="road-mode-btn'+(roadMode?' on':'')+'" onclick="toggleRoadMode()">🛣️ 道モード</button>'
+      +(roadMode
+        ?('<span class="road-mode-step">'
+          +'<span class="road-sel-from'+(fromC?' filled':'')+'">始点: '+(fromC?fromC.emoji+fromC.name:'未選択')+'</span>'
+          +' → '
+          +'<span class="road-sel-to'+(toC?' filled':'')+'">終点: '+(toC?toC.emoji+toC.name:'未選択')+'</span>'
+          +(fromC&&toC?(' <button class="add-race-btn" style="width:auto;margin:0;padding:5px 14px;font-size:12px" onclick="commitRoad()">道として追加</button>'):'')
+          +'</span>')
+        :'<span style="font-size:11px;color:var(--text3)">ONにすると2タップで道コースを記録</span>')
+      +'</div>';
+
     let rankGridHtml='';
     for(let r=1;r<=24;r++){
       const cls=r<=3?'top3':r<=topN?'top12':'';
       var rSel=selRank===r?' rk-sel':'';
       rankGridHtml+='<button class="rank-btn '+cls+rSel+'" onclick="pickRank('+r+')">'+r+'</button>';
     }
-    const canAdd=selCourseId&&selRank;
+    const canAdd=!roadMode&&selCourseId&&selRank;
     const selC=canAdd?getAllCourses().find(c=>c.id===selCourseId):null;
-        var tierBtns=TIERS.map(function(t){
-      var tSel=selTier===t?' t-sel':'';
-      return '<button class="tier-btn tier-'+t+tSel+'" onclick="pickTier(\''+t+'\')">'+t+'</button>';
-    }).join('');
     var addBtnLabel=canAdd?((selC&&selC.emoji?selC.emoji+' ':'')+' レース'+(done+1)+'を追加 ＋'+pts(selRank)+'pt'):'コースと順位を選んでください';
-    pickerHtml=''
-      +'<div class="picker-label">tier を選択</div>'
-      +'<div class="tier-picker">'+tierBtns+'</div>'
+
+    pickerHtml=roadModeBar
       +'<div class="picker-label">レース '+(done+1)+' — コースを選択</div>'
       +'<div class="course-picker-grid">'+courseCards+'</div>'
-      +'<div class="picker-label">順位を選択</div>'
-      +'<div class="rank-grid">'+rankGridHtml+'</div>'
-      +'<div id="dup-warn" style="margin-top:8px;padding:7px 12px;background:rgba(196,36,45,.15);border:1px solid #c4242d;border-radius:8px;font-size:11px;font-weight:700;color:#ff8080;text-align:center;opacity:0;transition:opacity .3s">⚠ このコースは既に記録されています。このまま追加されます。</div>'
-      +'<button class="add-race-btn" onclick="addRace()"'+(canAdd?'':' disabled')+'>'+addBtnLabel+'</button>';
+      +(roadMode
+        ?''
+        :('<div class="picker-label">順位を選択</div>'
+          +'<div class="rank-grid">'+rankGridHtml+'</div>'
+          +'<div id="dup-warn" style="margin-top:8px;padding:7px 12px;background:rgba(196,36,45,.15);border:1px solid #c4242d;border-radius:8px;font-size:11px;font-weight:700;color:#ff8080;text-align:center;opacity:0;transition:opacity .3s">⚠ このコースは既に記録されています。このまま追加されます。</div>'
+          +'<button class="add-race-btn" onclick="addRace()"'+(canAdd?'':' disabled')+'>'+addBtnLabel+'</button>'));
+  } else {
+    // 12コース完了後：コース入力は終わり、Tier等の変更のみ
+    pickerHtml='<div style="padding:10px 14px;background:rgba(46,170,74,.1);border:1px solid var(--green);border-radius:var(--radius);font-size:12px;font-weight:700;color:#5dca8a;text-align:center;margin-top:10px">✅ 12レース入力完了！Tier を選択して試合を確定してください。</div>';
   }
+
   var canFinish=done===12&&selTier;
-  var fbLabel=canFinish?'🏆 試合を完了して戦績に追加！':'🏆 tierを選択してください';
-  var fbStyle=canFinish?'':'opacity:.4;cursor:default;animation:none';
-  var finishBtn=done===12?('<button class="finish-btn" onclick="finishSession()"'+(canFinish?'':' disabled')+' style="'+fbStyle+'">'+fbLabel+'</button>'):'';
-  var memoHtml='<div style="margin-top:14px">'
-    +'<div class="picker-label">試合メモ（任意）</div>'
-    +'<textarea id="session-memo" rows="2" style="width:100%;font-size:12px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);resize:vertical;font-family:var(--font);outline:none" placeholder="アイテム運が悪かった、体調万全など…" oninput="session.memo=this.value">'+(session.memo||'')+'</textarea>'
-    +'</div>';
-  var finishBtnLabel=canFinish?'🏆 試合を完了して戦績に追加！':'🏆 tierを選択してください';
+  var finishBtnLabel=canFinish?'🏆 試合を完了して戦績に追加！':'🏆 Tierを選択してください';
   var finishBtnStyle=canFinish?'':'opacity:.4;cursor:default;animation:none';
   var finishBtn=done===12?('<button class="finish-btn" onclick="finishSession()"'+(canFinish?'':' disabled')+' style="'+finishBtnStyle+'">'+finishBtnLabel+'</button>'):'';
+  var memoHtml='<div style="margin-top:14px"><div class="picker-label">試合メモ（任意）</div>'
+    +'<textarea id="session-memo" rows="2" style="width:100%;font-size:12px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);resize:vertical;font-family:var(--font);outline:none" placeholder="アイテム運が悪かった、体調万全など…" oninput="session.memo=this.value">'+(session.memo||'')+'</textarea></div>';
   var cancelBtn=done>0?'<button class="reset-btn" onclick="cancelSession()">リセット</button>':'';
+
   document.getElementById('session-area').innerHTML=''
     +'<div class="session-panel">'
     +'<div class="session-hdr">'
@@ -636,7 +710,8 @@ function renderSession(){
     +'<input type="date" value="'+session.date+'" onchange="session.date=this.value" style="font-size:12px;padding:6px 8px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-family:var(--font)">'
     +'</div></div>'
     +'<div class="progress-bar"><div class="progress-fill" style="width:'+Math.round(done/12*100)+'%"></div></div>'
-    +renderSetupPanel()
+    +setupPanelHtml
+    +tierHtml
     +summaryHtml
     +'<div>'+(raceListHtml||'<div class="empty" style="padding:1rem">最初のコースを選択してください</div>')+'</div>'
     +pickerHtml
@@ -646,7 +721,55 @@ function renderSession(){
 }
 
 function pickTier(t){selTier=t;renderSession();autoSave();}
+function toggleRoadMode(){
+  roadMode=!roadMode;
+  roadFrom=null;roadTo=null;
+  renderSession();
+}
+function commitRoad(){
+  if(!roadFrom||!roadTo)return;
+  var fromC=getAllCourses().find(c=>c.id===roadFrom);
+  var toC=getAllCourses().find(c=>c.id===roadTo);
+  if(!fromC||!toC){alert('コースが見つかりません');return;}
+  // 同じ道が既に存在するか確認
+  var exists=customRoads.find(r=>r.fromId===roadFrom&&r.toId===roadTo);
+  if(exists){
+    // 既存の道をそのままレースとして使う
+    var rank=parseInt(prompt('「'+exists.name+'」の順位を入力（1〜24）',''));
+    if(!rank||rank<1||rank>24){roadFrom=null;roadTo=null;renderSession();return;}
+    session.races.push({courseId:exists.id,rank:rank});
+    roadFrom=null;roadTo=null;
+    renderSession();autoSave();
+    return;
+  }
+  var autoName=fromC.name.slice(0,5)+'→'+toC.name.slice(0,5)+' 道';
+  var name=prompt('道の名前（省略可）:',autoName)||autoName;
+  var id='road_'+roadFrom+'_'+roadTo+'_'+Date.now();
+  var road={id:id,name:name,emoji:'🛣️',color:'#9FE1CB',isRoad:true,cup:'道',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
+  customRoads.push(road);
+  courseRecords[id]=[];
+  var rank=parseInt(prompt('「'+name+'」の順位を入力（1〜24）',''));
+  if(!rank||rank<1||rank>24){roadFrom=null;roadTo=null;renderSession();autoSave();return;}
+  session.races.push({courseId:id,rank:rank});
+  roadFrom=null;roadTo=null;
+  renderCourseGrid();renderSession();autoSave();
+}
 function pickCourse(id){
+  if(roadMode){
+    if(!roadFrom){
+      roadFrom=id;
+      renderSession();
+    } else if(!roadTo){
+      if(id===roadFrom){roadFrom=null;renderSession();return;}
+      roadTo=id;
+      renderSession();
+    } else {
+      // 両方選択済み → 再選択
+      roadFrom=id;roadTo=null;
+      renderSession();
+    }
+    return;
+  }
   const isUsed=getUsedIds().has(id);
   selCourseId=id;
   renderSession();
@@ -676,10 +799,10 @@ function finishSession(){
   autoSave();renderMetrics();renderSession();
   alert('🏆 試合を記録しました！ 合計 '+totalPts+' pt');
 }
-function cancelSession(){if(!confirm('リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;selTier=null;renderSession();autoSave();}
+function cancelSession(){if(!confirm('リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;selTier=null;roadMode=false;roadFrom=null;roadTo=null;renderSession();autoSave();}
 
 function renderCourseGrid(){
-  var courses=getAllCourses();
+  var courses=getAllCourses().slice().sort(kanaSort);
   var html='';
   courses.forEach(function(c){
     var sel=selCourse===c.id?' sel':'';
@@ -937,17 +1060,17 @@ function clearImg(){
   if(prevSel)selectCourse(prevSel);
   autoSave();
 }
-document.getElementById('img-url').addEventListener('input',function(){
+function _bindImgUrl(){document.getElementById('img-url').addEventListener('input',function(){
   var prev=document.getElementById('img-prev');
   if(this.value){prev.src=this.value;prev.style.display='block';}else prev.style.display='none';
   imgDataUrl=null;
-});
-document.getElementById('img-file').addEventListener('change',function(){
+});}
+function _bindImgFile(){document.getElementById('img-file').addEventListener('change',function(){
   var file=this.files[0];if(!file)return;
   var reader=new FileReader();
   reader.onload=function(e){imgDataUrl=e.target.result;var prev=document.getElementById('img-prev');prev.src=imgDataUrl;prev.style.display='block';};
   reader.readAsDataURL(file);
-});
+});}
 function switchTab(tab){
   ['session','courses','matches','ranking','chart','tier'].forEach(function(t){document.getElementById('tab-'+t).style.display=t===tab?'':'none';});
   document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('on',['session','courses','matches','ranking','chart','tier'][i]===tab);});
@@ -975,8 +1098,11 @@ function importData(input){
       if(data.kartImages)kartImages=data.kartImages;
       if(data.courseImages)courseImages=data.courseImages;
       if(data.topN)topN=data.topN;
-      if(chars.length>0)selChar=chars[0].id;
-      if(karts.length>0)selKart=karts[0].id;
+      selChar=chars.length>0?chars[0].id:null;
+      selKart=karts.length>0?karts[0].id:null;
+      selTier=null;selCourseId=null;selRank=null;
+      session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
+      autoSave();
       renderMetrics();renderSession();renderCourseGrid();
       alert('データを読み込みました！');
     }catch(err){alert('読み込みに失敗しました。');}
@@ -1047,16 +1173,16 @@ function openAddSetupItem(){
   document.getElementById('modal-setup-add').style.display='flex';
 }
 var _setupAddImgData=null;
-document.getElementById('setup-add-imgfile').addEventListener('change',function(){
+function _bindSetupAddImgfile(){document.getElementById('setup-add-imgfile').addEventListener('change',function(){
   var file=this.files[0];if(!file)return;
   var r=new FileReader();
   r.onload=function(e){_setupAddImgData=e.target.result;var p=document.getElementById('setup-add-preview');p.src=_setupAddImgData;p.style.display='block';};
   r.readAsDataURL(file);
-});
-document.getElementById('setup-add-imgurl').addEventListener('input',function(){
+});}
+function _bindSetupAddImgurl(){document.getElementById('setup-add-imgurl').addEventListener('input',function(){
   if(this.value){var p=document.getElementById('setup-add-preview');p.src=this.value;p.style.display='block';}else document.getElementById('setup-add-preview').style.display='none';
   _setupAddImgData=null;
-});
+});}
 function saveSetupItem(){
   var name=document.getElementById('setup-add-name').value.trim();
   if(!name){alert('名前を入力してください');return;}
@@ -1084,16 +1210,16 @@ function openSetupImgModal(mode,id){
   if(imgs[id]){p.src=imgs[id];p.style.display='block';}else p.style.display='none';
   document.getElementById('modal-img-setup').style.display='flex';
 }
-document.getElementById('img-setup-url').addEventListener('input',function(){
+function _bindImgSetupUrl(){document.getElementById('img-setup-url').addEventListener('input',function(){
   if(this.value){var p=document.getElementById('img-setup-prev');p.src=this.value;p.style.display='block';}else document.getElementById('img-setup-prev').style.display='none';
   _setupImgData=null;
-});
-document.getElementById('img-setup-file').addEventListener('change',function(){
+});}
+function _bindImgSetupFile(){document.getElementById('img-setup-file').addEventListener('change',function(){
   var file=this.files[0];if(!file)return;
   var r=new FileReader();
   r.onload=function(e){_setupImgData=e.target.result;var p=document.getElementById('img-setup-prev');p.src=_setupImgData;p.style.display='block';};
   r.readAsDataURL(file);
-});
+});}
 function saveSetupImg(){
   var isChar=_setupImgMode==='char';
   var imgs=isChar?charImages:kartImages;
@@ -1134,6 +1260,11 @@ function openEditMatch(id){
   document.getElementById('edit-tier-picker').innerHTML=tierBtns;
   document.getElementById('edit-memo').value=m.memo||'';
   document.getElementById('edit-date').value=m.date||'';
+  // キャラ・マシン select populate
+  var charOpts=chars.map(function(c){return '<option value="'+c.id+'"'+(c.id===m.charId?' selected':'')+'>'+c.emoji+' '+c.name+'</option>';}).join('');
+  document.getElementById('edit-char').innerHTML=charOpts;
+  var kartOpts=karts.map(function(k){return '<option value="'+k.id+'"'+(k.id===m.kartId?' selected':'')+'>'+k.emoji+' '+k.name+'</option>';}).join('');
+  document.getElementById('edit-kart').innerHTML=kartOpts;
   // race list
   var raceList=m.races.map(function(r,i){
     var c=getAllCourses().find(function(x){return x.id===r.courseId;});
@@ -1163,8 +1294,9 @@ function saveEditMatch(){
   if(!m)return;
   m.memo=document.getElementById('edit-memo').value;
   m.date=document.getElementById('edit-date').value;
+  m.charId=document.getElementById('edit-char').value;
+  m.kartId=document.getElementById('edit-kart').value;
   m.totalPts=m.races.reduce(function(s,r){return s+pts(r.rank);},0);
-  // Rebuild courseRecords from matchHistory
   rebuildCourseRecords();
   closeM('modal-edit');
   renderMatches();renderMetrics();renderCourseGrid();autoSave();
@@ -1274,19 +1406,36 @@ function renderTierAnalysis(){
     +detailRows;
 }
 
-// ===== Event delegation for session-area =====
-document.getElementById('session-area').addEventListener('click',function(e){
-  // コースカード選択
-  var cpCard=e.target.closest('[data-pick-course]');
-  if(cpCard){pickCourse(cpCard.getAttribute('data-pick-course'));return;}
-});
+// ===== Event delegation & Init (DOMContentLoaded保証) =====
+document.addEventListener('DOMContentLoaded', function(){
 
-// ===== Event delegation for course grid =====
-document.getElementById('courses-accordion').addEventListener('click',function(e){
-  var imgBtn=e.target.closest('.img-btn');
-  if(imgBtn){openImgModal(imgBtn.getAttribute('data-img-id'));return;}
-  var card=e.target.closest('.ccard');
-  if(card){selectCourse(card.getAttribute('data-course-id'));return;}
+  // モーダル内のファイル・URL入力バインド
+  _bindImgUrl();
+  _bindImgFile();
+  _bindSetupAddImgfile();
+  _bindSetupAddImgurl();
+  _bindImgSetupUrl();
+  _bindImgSetupFile();
+
+  // コースピッカー（試合入力タブ）
+  document.getElementById('session-area').addEventListener('click',function(e){
+    var cpCard=e.target.closest('[data-pick-course]');
+    if(cpCard){pickCourse(cpCard.getAttribute('data-pick-course'));return;}
+  });
+
+  // コース戦績アコーディオン
+  document.getElementById('courses-accordion').addEventListener('click',function(e){
+    var imgBtn=e.target.closest('.img-btn');
+    if(imgBtn){openImgModal(imgBtn.getAttribute('data-img-id'));return;}
+    var card=e.target.closest('.ccard');
+    if(card){selectCourse(card.getAttribute('data-course-id'));return;}
+  });
+
+  // 初期描画
+  autoLoad();
+  renderMetrics();
+  renderSession();
+  renderCourseGrid();
 });
 
 // ===== Init =====
@@ -1307,7 +1456,10 @@ function autoSave(){
       selKart:selKart,
       selTier:selTier,
       selCourseId:selCourseId,
-      selRank:selRank
+      selRank:selRank,
+      roadMode:roadMode,
+      roadFrom:roadFrom,
+      roadTo:roadTo
     }));
   }catch(e){}
 }
@@ -1332,6 +1484,9 @@ function autoLoad(){
     if(data.selTier)selTier=data.selTier;
     if(data.selCourseId)selCourseId=data.selCourseId;
     if(data.selRank)selRank=data.selRank;
+    if(data.roadMode)roadMode=data.roadMode;
+    if(data.roadFrom)roadFrom=data.roadFrom;
+    if(data.roadTo)roadTo=data.roadTo;
   }catch(e){}
 }
 
@@ -1341,23 +1496,5 @@ renderSession();
 renderCourseGrid();
 
 </script>
-
-<div id="modal-edit" class="mbg" style="display:none" onclick="closeMBg('modal-edit',event)">
-  <div class="modal" style="width:380px">
-    <div class="modal-title">✏️ 試合を訂正</div>
-    <div class="modal-note">レースの順位・コースを変更できます。変更後「保存」してください。</div>
-    <div id="edit-race-list"></div>
-    <div class="fr" style="margin-top:12px"><label class="fl">試合メモ</label>
-    <input type="text" id="edit-memo" placeholder="メモ（任意）"></div>
-    <div class="fr"><label class="fl">Tier</label>
-    <div class="tier-picker" id="edit-tier-picker"></div></div>
-    <div class="fr"><label class="fl">日付</label><input type="date" id="edit-date"></div>
-    <div class="mact">
-      <button class="bc" onclick="closeM('modal-edit')">キャンセル</button>
-      <button class="bs-r" onclick="deleteMatch()" style="margin-right:auto">試合を削除</button>
-      <button class="bs" onclick="saveEditMatch()">保存</button>
-    </div>
-  </div>
-</div>
 </body>
 </html>
