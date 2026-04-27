@@ -585,7 +585,7 @@ function renderSession(){
       const isUsed=used.has(c.id);
       const img=courseImages[c.id];
       var th=img?('<img class="cp-thumb" src="'+img+'" alt="'+c.name+'" onerror="this.style.display=\'none\'">'):('<div class="cp-thumb-ph" style="background:'+(c.color||'#333')+'22">'+c.emoji+'</div>');
-      return '<div class="cp-card'+(c.isRoad?' road-type':'')+(isUsed?' used':'')+(selCourseId===c.id?' cp-sel':'')+' onclick="pickCourse(\''+c.id+'\')">'
+      return '<div class="cp-card'+(c.isRoad?' road-type':'')+(isUsed?' used':'')+(selCourseId===c.id?' cp-sel':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer">'
       +th
       +'<div class="cp-name">'+c.name+'</div>'
       +(isUsed?'<div class="cp-warn">⚠ 選択済み</div>':'')
@@ -645,22 +645,19 @@ function renderSession(){
     +finishBtn;
 }
 
-function pickTier(t){selTier=t;renderSession();}
+function pickTier(t){selTier=t;renderSession();autoSave();}
 function pickCourse(id){
   const isUsed=getUsedIds().has(id);
+  selCourseId=id;
+  renderSession();
+  autoSave();
   if(isUsed){
-    // 既選択でも選べる — 控えめな警告を一瞬表示してから選択
-    selCourseId=id;
-    renderSession();
     const warn=document.getElementById('dup-warn');
     if(warn){warn.style.opacity='1';setTimeout(()=>{warn.style.opacity='0';},2200);}
-  } else {
-    selCourseId=id;
-    renderSession();
   }
   setTimeout(()=>{const el=document.querySelector('.rank-grid');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
 }
-function pickRank(r){selRank=r;renderSession();}
+function pickRank(r){selRank=r;renderSession();autoSave();}
 function addRace(){
   if(!selCourseId||!selRank)return;
   session.races.push({courseId:selCourseId,rank:selRank});
@@ -679,7 +676,7 @@ function finishSession(){
   autoSave();renderMetrics();renderSession();
   alert('🏆 試合を記録しました！ 合計 '+totalPts+' pt');
 }
-function cancelSession(){if(!confirm('リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;renderSession();}
+function cancelSession(){if(!confirm('リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;selTier=null;renderSession();autoSave();}
 
 function renderCourseGrid(){
   var courses=getAllCourses();
@@ -1277,6 +1274,13 @@ function renderTierAnalysis(){
     +detailRows;
 }
 
+// ===== Event delegation for session-area =====
+document.getElementById('session-area').addEventListener('click',function(e){
+  // コースカード選択
+  var cpCard=e.target.closest('[data-pick-course]');
+  if(cpCard){pickCourse(cpCard.getAttribute('data-pick-course'));return;}
+});
+
 // ===== Event delegation for course grid =====
 document.getElementById('courses-accordion').addEventListener('click',function(e){
   var imgBtn=e.target.closest('.img-btn');
@@ -1286,6 +1290,27 @@ document.getElementById('courses-accordion').addEventListener('click',function(e
 });
 
 // ===== Init =====
+function autoSave(){
+  try{
+    localStorage.setItem('mkw_tracker',JSON.stringify({
+      courseRecords:courseRecords,
+      matchHistory:matchHistory,
+      customRoads:customRoads,
+      courseImages:courseImages,
+      chars:chars,
+      karts:karts,
+      charImages:charImages,
+      kartImages:kartImages,
+      topN:topN,
+      session:session,
+      selChar:selChar,
+      selKart:selKart,
+      selTier:selTier,
+      selCourseId:selCourseId,
+      selRank:selRank
+    }));
+  }catch(e){}
+}
 function autoLoad(){
   try{
     var raw=localStorage.getItem('mkw_tracker');if(!raw)return;
@@ -1299,8 +1324,14 @@ function autoLoad(){
     if(data.kartImages)kartImages=data.kartImages;
     if(data.courseImages)courseImages=data.courseImages;
     if(data.topN)topN=data.topN;
-    if(chars.length>0)selChar=chars[0].id;
-    if(karts.length>0)selKart=karts[0].id;
+    if(data.session)session=data.session;
+    if(data.selChar)selChar=data.selChar;
+    else if(chars.length>0)selChar=chars[0].id;
+    if(data.selKart)selKart=data.selKart;
+    else if(karts.length>0)selKart=karts[0].id;
+    if(data.selTier)selTier=data.selTier;
+    if(data.selCourseId)selCourseId=data.selCourseId;
+    if(data.selRank)selRank=data.selRank;
   }catch(e){}
 }
 
