@@ -478,6 +478,37 @@ const CUPS=[
     {id:'rainbow_road',name:'レインボーロード',nameEn:'Rainbow Road',emoji:'🌈',color:'#D4537E'},
   ]},
 ];
+const ROAD_CONNECTIONS={
+  choco:['mario_bros','crown_city1','shupopo','heiho','wario_stadium','fukupuku','momo_country','kinopio','koopa_castle','peach_stadium1'],
+  crown_city1:['mario_bros','shupopo','dk_space','sansan','wario_stadium','nokonoko','riverside','momo_country','choco','peach_stadium1'],
+  dino_jungle:['nokonoko','riverside','peach_beach','salty_town','hatena_temple'],
+  dk_snow:['rosetta','ice_building','wario_ship','salty_town','fukupuku','shonyu','momo_country'],
+  dk_space:['mario_bros','crown_city1','shupopo','sansan','nokonoko','peach_stadium1'],
+  donguri:['shonyu','obake_cinema','honebone','kinopio','mario_circuit'],
+  fukupuku:['dk_snow','rosetta','wario_ship','riverside','salty_town','shonyu','momo_country','choco','peach_stadium1'],
+  hatena_temple:['nokonoko','riverside','peach_beach','salty_town','dino_jungle'],
+  heiho:['mario_bros','sansan','wario_stadium','killer_ship','choco'],
+  honebone:['wario_stadium','killer_ship','obake_cinema','momo_country','kinopio','koopa_castle','donguri','mario_circuit'],
+  ice_building:['dk_snow','rosetta','wario_ship','salty_town','fukupuku','shonyu'],
+  killer_ship:['heiho','wario_stadium','honebone','kinopio','koopa_castle'],
+  kinopio:['mario_bros','wario_stadium','killer_ship','shonyu','honebone','momo_country','choco','koopa_castle','donguri','mario_circuit','peach_stadium1'],
+  koopa_castle:['wario_stadium','killer_ship','honebone','choco','kinopio','mario_circuit'],
+  mario_bros:['crown_city1','shupopo','sansan','heiho','wario_stadium','choco','kinopio'],
+  mario_circuit:['rosetta','shonyu','obake_cinema','honebone','momo_country','kinopio','koopa_castle','donguri','peach_stadium1'],
+  momo_country:['crown_city1','dk_snow','fukupuku','shonyu','honebone','choco','kinopio','mario_circuit','peach_stadium1'],
+  nokonoko:['crown_city1','dk_space','riverside','dino_jungle','peach_stadium1'],
+  obake_cinema:['rosetta','shonyu','honebone','donguri','mario_circuit'],
+  peach_beach:['wario_ship','riverside','salty_town','dino_jungle','hatena_temple'],
+  peach_stadium1:['crown_city1','nokonoko','riverside','fukupuku','momo_country','choco','kinopio','rainbow_road'],
+  riverside:['crown_city1','nokonoko','peach_beach','salty_town','dino_jungle','hatena_temple','fukupuku','peach_stadium1'],
+  rosetta:['dk_snow','ice_building','wario_ship','fukupuku','shonyu','obake_cinema','mario_circuit'],
+  salty_town:['dk_snow','wario_ship','riverside','peach_beach','dino_jungle','hatena_temple','fukupuku'],
+  sansan:['mario_bros','crown_city1','shupopo','heiho','nokonoko'],
+  shonyu:['dk_snow','rosetta','ice_building','fukupuku','obake_cinema','momo_country','kinopio','donguri','mario_circuit'],
+  shupopo:['mario_bros','crown_city1','dk_space','sansan','nokonoko','choco'],
+  wario_ship:['dk_snow','rosetta','ice_building','peach_beach','salty_town','fukupuku'],
+  wario_stadium:['mario_bros','crown_city1','heiho','killer_ship','honebone','choco','kinopio','koopa_castle'],
+};
 const BASE_COURSES=CUPS.flatMap(cup=>cup.courses.map(c=>({...c,cup:cup.name,isRoad:false})));
 let customRoads=[],courseRecords={},matchHistory=[],courseImages={};
 BASE_COURSES.forEach(c=>{courseRecords[c.id]=[];});
@@ -643,6 +674,9 @@ function kanaSort(a,b){
 }
 
 function renderSession(){
+  // コースピッカーのスクロール位置を保存
+  var _cpGrid=document.querySelector('.course-picker-grid');
+  var _cpScrollTop=_cpGrid?_cpGrid.scrollTop:0;
   const used=getUsedIds();
   const races=session.races,done=races.length;
   const totalPts=races.reduce((s,r)=>s+pts(r.rank),0);
@@ -678,15 +712,22 @@ function renderSession(){
       const img=courseImages[c.id];
       var th=img?('<img class="cp-thumb" src="'+img+'" alt="'+cN(c)+'" >'):('<div class="cp-thumb-ph" style="background:'+(c.color||'#333')+'22">'+c.emoji+'</div>');
       var roadCls='';
+      var roadDim=false;
       if(roadMode){
         if(roadFrom===c.id) roadCls=' road-from-sel';
         else if(roadTo===c.id) roadCls=' road-to-sel';
+        else if(roadFrom){
+          // 始点選択済み：接続先テーブルにないコースはdim
+          var allowed=ROAD_CONNECTIONS[roadFrom]||[];
+          if(allowed.length>0&&!allowed.includes(c.id)) roadDim=true;
+        }
       }
       // tempRoad: 選択中の道を強調表示
       var isTempSel=tempRoad&&c.id===tempRoad.id;
       var normalSel=(!roadMode&&(selCourseId===c.id||isTempSel))?' cp-sel':'';
       var tempBadge=isTempSel?'<div class="cp-road-lbl" style="background:rgba(159,225,203,.9);color:#001a10">✓ '+(lang==="en"?'INTR':'道')+'</div>':'';
-      return '<div class="cp-card'+(c.isRoad?' road-type':'')+normalSel+roadCls+(isUsed?' used':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer">'
+      var dimStyle=roadDim?'opacity:.25;pointer-events:none;':'';
+      return '<div class="cp-card'+(c.isRoad?' road-type':'')+normalSel+roadCls+(isUsed?' used':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer;'+dimStyle+'">'
         +th
         +'<div class="cp-name">'+cN(c)+'</div>'
         +(isUsed&&!roadMode?'<div class="cp-warn">⚠ '+( lang==='en'?'Already used':'選択済み')+'</div>':'')
@@ -773,6 +814,11 @@ function renderSession(){
     +memoHtml
     +'</div>'
     +finishBtn;
+  // コースピッカーのスクロール位置を復元
+  if(_cpScrollTop>0){
+    var _cpGridNew=document.querySelector('.course-picker-grid');
+    if(_cpGridNew)_cpGridNew.scrollTop=_cpScrollTop;
+  }
 }
 
 function pickTier(tier){selTier=tier;renderSession();autoSave();}
@@ -817,6 +863,9 @@ function pickCourse(id){
       renderSession();
     } else if(!roadTo){
       if(id===roadFrom){roadFrom=null;renderSession();return;}
+      // 接続先に含まれないコースはタップ無効
+      var allowed=ROAD_CONNECTIONS[roadFrom]||[];
+      if(allowed.length>0&&!allowed.includes(id))return;
       roadTo=id;
       renderSession();
     } else {
