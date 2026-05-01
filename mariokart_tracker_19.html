@@ -1,0 +1,2062 @@
+<!-- Copyright © 2025 Your Name. Licensed under CC BY-NC 4.0 -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mario Kart World Lounge Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#E8303A;--red2:#c4242d;
+  --blue:#1a6fc4;--blue2:#1459a0;
+  --yellow:#F5C518;--yellow2:#d4a900;
+  --green:#2eaa4a;--green2:#228a3a;
+  --bg:#0f1923;--bg2:#162130;--bg3:#1e2e40;
+  --card:#1e2e40;--card2:#243548;
+  --text:#f0ede8;--text2:#9ab0c8;--text3:#5a7a96;
+  --border:#2a3f56;--border2:#3a5570;
+  --radius:10px;--radius-lg:16px;
+  --font:'Nunito',system-ui,sans-serif;
+  --font-mk:'Fredoka One',system-ui,sans-serif;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(180deg,transparent 0px,transparent 60px,rgba(255,255,255,.015) 60px,rgba(255,255,255,.015) 62px);pointer-events:none;z-index:0;animation:road 6s linear infinite}
+@keyframes road{0%{background-position:0 0}100%{background-position:0 62px}}
+.container{max-width:820px;margin:0 auto;padding:1.5rem 1rem;position:relative;z-index:1}
+.mk-header{text-align:left;margin-bottom:1.5rem;padding:1.4rem 1.8rem;background:var(--bg2);border-radius:var(--radius-lg);border:1px solid var(--border2);position:relative;overflow:hidden;display:flex;align-items:center;gap:1.2rem}
+.mk-header::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#fff 0%,var(--text2) 100%)}
+.mk-header::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 0% 50%,rgba(255,255,255,.04) 0%,transparent 60%);pointer-events:none}
+.mk-header-icon{font-size:32px;flex-shrink:0;opacity:.9}
+.mk-header-body{flex:1}
+.mk-header-title{font-family:var(--font-mk);font-size:22px;color:var(--text);letter-spacing:3px;text-transform:uppercase;margin-bottom:5px;line-height:1}
+.mk-header-sub{font-size:10px;color:var(--text3);font-weight:700;letter-spacing:3px;text-transform:uppercase}
+.mk-header-badge{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.mk-header-badge-item{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);padding:3px 8px;border:1px solid var(--border2);border-radius:4px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem}
+.mc{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+.mc:hover{transform:translateY(-2px);border-color:var(--border2)}
+.mc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.mc:nth-child(1)::before{background:var(--yellow)}
+.mc:nth-child(2)::before{background:var(--blue)}
+.mc:nth-child(3)::before{background:var(--green)}
+.mc:nth-child(4)::before{background:var(--red)}
+.mc-lbl{font-size:11px;color:var(--text2);margin-bottom:6px;font-weight:600;letter-spacing:.5px}
+.mc-val{font-size:24px;font-weight:800;font-family:var(--font-mk)}
+.mc-sub{font-size:11px;color:var(--text3);margin-top:3px}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;background:var(--bg2);padding:5px;border-radius:var(--radius);border:1.5px solid var(--border)}
+.tab{flex:1;padding:8px 4px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .2s;white-space:nowrap;font-family:var(--font)}
+.tab.on{background:var(--red);color:#fff;box-shadow:0 2px 8px rgba(232,48,58,.4)}
+.tab:hover:not(.on){background:var(--bg3);color:var(--text)}
+/* 試合入力 */
+.session-panel{background:var(--card);border:2px solid var(--blue);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem;box-shadow:0 0 20px rgba(26,111,196,.2)}
+.session-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px}
+.session-title{font-family:var(--font-mk);font-size:17px;color:var(--yellow)}
+.session-prog{font-size:12px;color:var(--text2);margin-top:2px}
+.progress-bar{width:100%;height:8px;background:var(--bg);border-radius:4px;margin-bottom:1rem;overflow:hidden;border:1px solid var(--border)}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--yellow));border-radius:4px;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.session-summary{display:flex;gap:16px;padding:10px 14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:1rem;flex-wrap:wrap;border:1px solid var(--border)}
+.ss-item{font-size:11px;color:var(--text2);font-weight:600}
+.ss-val{font-size:15px;font-weight:800;font-family:var(--font-mk)}
+.race-row{display:flex;align-items:center;gap:8px;padding:8px 6px;border-bottom:1px solid var(--border);transition:background .15s}
+.race-row:hover{background:var(--bg3)}
+.race-num{font-size:11px;font-weight:700;color:var(--text3);width:22px;text-align:center}
+.race-course{flex:1;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px}
+.race-thumb{width:38px;height:20px;object-fit:cover;border-radius:3px;flex-shrink:0}
+.race-pts{font-size:11px;color:var(--yellow);width:40px;text-align:right;font-weight:700}
+.race-del{font-size:11px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:4px;transition:all .15s}
+.race-del:hover{color:#ff6b6b;background:rgba(255,107,107,.15)}
+/* コースピッカー */
+.picker-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;margin-top:16px}
+.course-picker-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;max-height:320px;overflow-y:auto;padding:2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.course-picker-grid::-webkit-scrollbar{width:6px}
+.course-picker-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.cp-card{background:var(--bg2);border:2px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .18s;position:relative}
+.cp-card:hover{border-color:var(--yellow);transform:translateY(-2px);box-shadow:0 4px 16px rgba(245,197,24,.2)}
+.cp-card.cp-sel{border-color:var(--yellow);background:rgba(245,197,24,.1);box-shadow:0 0 16px rgba(245,197,24,.35)}
+.cp-card.used{border-color:#c4242d!important;opacity:.7}
+.cp-card.used:hover{border-color:#E8303A!important;box-shadow:0 0 12px rgba(232,48,58,.35)!important;transform:translateY(-2px)}
+
+.tier-picker{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.tier-btn{padding:7px 10px;font-size:13px;font-weight:800;font-family:var(--font-mk);border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .18s;min-width:42px;text-align:center}
+.tier-btn:hover{transform:translateY(-2px)}
+.tier-btn.t-sel{transform:scale(1.12);box-shadow:0 2px 14px rgba(0,0,0,.4)}
+/* tier colors */
+.tier-X{border-color:#ff4ecd;color:#ff4ecd}.tier-X.t-sel{background:#ff4ecd;color:#1a0015}
+.tier-S{border-color:#ff6b35;color:#ff6b35}.tier-S.t-sel{background:#ff6b35;color:#1a0800}
+.tier-A{border-color:#F5C518;color:#F5C518}.tier-A.t-sel{background:#F5C518;color:#1a1200}
+.tier-B{border-color:#5dca8a;color:#5dca8a}.tier-B.t-sel{background:#5dca8a;color:#001a0e}
+.tier-BC{border-color:#4ab89a;color:#4ab89a}.tier-BC.t-sel{background:#4ab89a;color:#001510}
+.tier-C{border-color:#378ADD;color:#378ADD}.tier-C.t-sel{background:#378ADD;color:#001020}
+.tier-CD{border-color:#5a7acc;color:#5a7acc}.tier-CD.t-sel{background:#5a7acc;color:#00081a}
+.tier-D{border-color:#8a7acc;color:#8a7acc}.tier-D.t-sel{background:#8a7acc;color:#08001a}
+.tier-DE{border-color:#aa6aaa;color:#aa6aaa}.tier-DE.t-sel{background:#aa6aaa;color:#150015}
+.tier-E{border-color:#cc6688;color:#cc6688}.tier-E.t-sel{background:#cc6688;color:#1a0010}
+.tier-EF{border-color:#aaaaaa;color:#aaaaaa}.tier-EF.t-sel{background:#aaaaaa;color:#111}
+.tier-F{border-color:#666;color:#888}.tier-F.t-sel{background:#666;color:#eee}
+.tier-SQ{border-color:#00e5ff;color:#00e5ff}.tier-SQ.t-sel{background:#00e5ff;color:#001a1f}
+/* tier badge in match card */
+.tier-badge{display:inline-block;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:800;font-family:var(--font-mk);border:1.5px solid}
+
+.cp-warn{position:absolute;bottom:0;left:0;right:0;background:rgba(196,36,45,.88);color:#fff;font-size:9px;font-weight:700;text-align:center;padding:3px 0;letter-spacing:.5px}
+.cp-card.road-type{border-style:dashed}
+.cp-thumb{width:100%;aspect-ratio:600/315;object-fit:cover;display:block}
+.cp-thumb-ph{width:100%;aspect-ratio:600/315;display:flex;align-items:center;justify-content:center;font-size:22px}
+
+/* 道中コース CSS重ね合わせ */
+.road-img-wrap{position:relative;width:100%;aspect-ratio:600/315;overflow:hidden;display:block}
+.road-img-bg{width:100%;height:100%;object-fit:cover;display:block}
+.road-img-fg{position:absolute;top:0;left:0;width:50%;aspect-ratio:600/315;object-fit:cover;object-position:right center;border-right:2px solid rgba(255,255,255,0.7);border-bottom:2px solid rgba(255,255,255,0.7)}
+.cp-name{font-size:11px;font-weight:700;padding:5px 7px;line-height:1.3;color:var(--text)}
+.cp-used-lbl{position:absolute;top:4px;right:4px;background:rgba(0,0,0,.7);color:#aaa;font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700}
+.cp-road-lbl{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.7);color:var(--yellow);font-size:9px;padding:2px 5px;border-radius:8px;font-weight:700}
+/* 順位グリッド */
+.rank-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.rank-btn{padding:9px 4px;font-size:14px;font-weight:800;font-family:var(--font-mk);border-radius:8px;border:2px solid var(--border);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .15s;text-align:center}
+.rank-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+.rank-btn.top3{border-color:rgba(245,197,24,.4);color:var(--yellow)}
+.rank-btn.top12{border-color:rgba(46,170,74,.4);color:#5dca8a}
+.rank-btn.rk-sel{background:var(--yellow);border-color:var(--yellow2);color:#1a1200;transform:scale(1.1);box-shadow:0 2px 14px rgba(245,197,24,.5)}
+.add-race-btn{width:100%;margin-top:14px;padding:13px;font-size:14px;font-weight:800;font-family:var(--font-mk);border-radius:var(--radius);border:none;background:linear-gradient(135deg,var(--green),var(--green2));color:#fff;cursor:pointer;transition:all .2s;letter-spacing:.5px;box-shadow:0 3px 12px rgba(46,170,74,.3)}
+.add-race-btn:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(46,170,74,.45)}
+.add-race-btn:active{transform:scale(.97)}
+.add-race-btn:disabled{opacity:.35;cursor:default;transform:none;box-shadow:none}
+.finish-btn{width:100%;padding:15px;font-size:16px;font-weight:800;font-family:var(--font-mk);border-radius:var(--radius);border:3px solid var(--yellow2);background:linear-gradient(135deg,var(--yellow),var(--yellow2));color:#1a1200;cursor:pointer;transition:all .2s;letter-spacing:.5px;animation:glow 2s ease-in-out infinite;margin-top:10px}
+@keyframes glow{0%,100%{box-shadow:0 4px 20px rgba(245,197,24,.35)}50%{box-shadow:0 4px 36px rgba(245,197,24,.75)}}
+.finish-btn:hover{transform:translateY(-2px) scale(1.01)}
+.reset-btn{padding:6px 12px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid #ff6b6b;background:transparent;color:#ff6b6b;cursor:pointer;transition:all .15s}
+.reset-btn:hover{background:rgba(255,107,107,.15)}
+/* コース戦績カード — cp-cardと同等の縦横比に */
+.course-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:1.25rem}
+.ccard{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:all .18s;position:relative;display:flex;align-items:stretch}
+.ccard:hover{border-color:var(--yellow);box-shadow:0 2px 10px rgba(245,197,24,.2)}
+.ccard.sel{border:2px solid var(--yellow);box-shadow:0 0 12px rgba(245,197,24,.3)}
+.ccard.road-type{border-style:dashed}
+/* サムネは左側に固定幅で配置 */
+.cthumb-wrap{flex-shrink:0;width:68px;position:relative;overflow:hidden}
+.cthumb{width:68px;height:100%;object-fit:cover;display:block;min-height:36px}
+.cthumb-ph{width:68px;min-height:36px;display:flex;align-items:center;justify-content:center;font-size:18px;background:var(--bg2)}
+/* 道中コース用ラッパー（左固定） */
+.cthumb-wrap .road-img-wrap{width:68px;height:100%;min-height:36px;aspect-ratio:unset}
+.cthumb-wrap .road-img-bg{width:68px;height:100%;object-fit:cover;object-position:right center}
+.cthumb-wrap .road-img-fg{width:50%;object-position:left center}
+.img-btn{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.65);color:#fff;border:none;border-radius:4px;padding:2px 5px;font-size:9px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .15s;z-index:2}
+.ccard:hover .img-btn{opacity:1}
+.road-badge{position:absolute;bottom:2px;left:2px;background:rgba(0,0,0,.65);color:var(--yellow);font-size:8px;padding:1px 4px;border-radius:4px;font-weight:700;z-index:2}
+/* 右側テキスト */
+.cinfo{flex:1;padding:4px 6px;display:flex;flex-direction:column;justify-content:center;min-width:0;overflow:hidden}
+.cname{font-size:10px;font-weight:700;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+.cmeta{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.ccup{font-size:9px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 道モード */
+.road-mode-bar{display:flex;align-items:center;gap:8px;padding:10px 12px;background:rgba(159,225,203,.08);border:1.5px solid rgba(159,225,203,.35);border-radius:var(--radius);margin-bottom:10px;flex-wrap:wrap}
+.road-mode-btn{padding:7px 14px;font-size:12px;font-weight:800;border-radius:8px;border:2px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;transition:all .18s;font-family:var(--font-mk)}
+.road-mode-btn.on{border-color:#9FE1CB;background:rgba(159,225,203,.18);color:#9FE1CB;box-shadow:0 0 12px rgba(159,225,203,.25)}
+.road-mode-step{font-size:11px;color:#9FE1CB;font-weight:700}
+.road-sel-from,.road-sel-to{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:700;background:var(--bg);border:1px solid var(--border2)}
+.road-sel-img{width:52px;height:28px;object-fit:cover;border-radius:4px;flex-shrink:0}
+.road-sel-from.filled{border-color:#9FE1CB;color:#9FE1CB}
+.road-sel-to.filled{border-color:var(--yellow);color:var(--yellow)}
+.cp-card.road-from-sel{border-color:#9FE1CB!important;background:rgba(159,225,203,.12)!important;box-shadow:0 0 12px rgba(159,225,203,.3)!important}
+.cp-card.road-to-sel{border-color:var(--yellow)!important;background:rgba(245,197,24,.1)!important;box-shadow:0 0 12px rgba(245,197,24,.3)!important}
+.badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.b-none{background:var(--bg);color:var(--text3)}
+.b-top{background:#3d2800;color:#F5C518;border:1px solid #F5C518}
+.b-mid{background:#0d2e14;color:#2eaa4a;border:1px solid #2eaa4a}
+.b-low{background:#2e0d0d;color:#ff6b6b;border:1px solid #ff6b6b}
+.detail{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1.25rem}
+.d-hdr{display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap}
+.d-thumb{width:80px;height:42px;object-fit:cover;border-radius:8px;border:1.5px solid var(--border)}
+.d-name{font-size:16px;font-weight:800;font-family:var(--font-mk)}
+.d-cup{font-size:12px;color:var(--text2);margin-top:2px}
+.dstats{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-bottom:1rem}
+.ds{background:var(--bg2);border-radius:var(--radius);padding:10px 12px;border:1px solid var(--border)}
+.ds-l{font-size:10px;color:var(--text2);margin-bottom:4px;font-weight:600}
+.ds-v{font-size:16px;font-weight:800;font-family:var(--font-mk)}
+.hist-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.h-num{width:18px;color:var(--text3);text-align:center;font-size:11px;font-weight:700}
+.h-date{color:var(--text3);flex:1;font-size:11px}
+.del-btn{font-size:10px;color:var(--text3);background:none;border:none;cursor:pointer;padding:2px 4px;border-radius:4px;transition:all .15s}
+.del-btn:hover{color:#ff6b6b;background:rgba(255,107,107,.15)}
+.rk-pill{padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.rk1{background:#3d2800;color:#F5C518;border:1px solid #F5C518}
+.rk2{background:#1a2a3a;color:#85B7EB;border:1px solid #4a8cc4}
+.rk3{background:#0d2e14;color:#5dca8a;border:1px solid #2eaa4a}
+.rk12{background:#1e2e40;color:#9ab0c8}
+.rk-e{background:var(--bg2);color:var(--text3)}
+/* 試合履歴 */
+.match-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:10px;cursor:pointer;transition:all .2s}
+.match-card:hover{border-color:var(--border2);transform:translateY(-1px)}
+.match-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.match-no{font-size:13px;font-weight:800;font-family:var(--font-mk)}
+.match-pts{font-size:20px;font-weight:800;font-family:var(--font-mk)}
+.pts-high{color:var(--yellow)}.pts-mid{color:#85B7EB}.pts-low{color:var(--text2)}
+.match-sub{font-size:11px;color:var(--text2)}
+.match-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+.match-race-row{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:11px;color:var(--text2)}
+/* ランキング・グラフ */
+.sort-bar{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.sort-btn{padding:5px 12px;font-size:11px;font-weight:700;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.sort-btn.on{background:var(--blue);border-color:var(--blue2);color:#fff}
+.rnk-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-lbl{font-size:11px;color:var(--text2);width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
+.bar-track{flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.bar-avg{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),#85B7EB);transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bar-rate{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#5dca8a);transition:width .5s cubic-bezier(.4,0,.2,1)}
+.bar-val{font-size:11px;font-weight:700;width:44px;text-align:right}
+.empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
+/* モーダル */
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;display:flex;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
+.modal{background:var(--card2);border-radius:var(--radius-lg);border:1.5px solid var(--border2);padding:1.5rem;width:340px;max-height:85vh;overflow-y:auto;margin-bottom:40px;box-shadow:var(--shadow)}
+.modal-title{font-family:var(--font-mk);font-size:16px;color:var(--yellow);margin-bottom:.75rem}
+.modal-note{font-size:12px;color:var(--text2);margin-bottom:1rem;padding:8px 10px;background:var(--bg2);border-radius:var(--radius);line-height:1.5;border:1px solid var(--border)}
+.fr{margin-bottom:10px}
+.fl{font-size:11px;color:var(--text2);margin-bottom:4px;display:block;font-weight:600}
+.fr select,.fr input{width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);outline:none;font-family:var(--font)}
+.fr select:focus,.fr input:focus{border-color:var(--blue)}
+.mact{display:flex;gap:8px;justify-content:flex-end;margin-top:1rem}
+.bc{padding:8px 16px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;font-family:var(--font)}
+.bs{padding:8px 16px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font)}
+.bs-r{padding:8px 16px;font-size:12px;font-weight:700;border-radius:8px;border:none;background:#c4242d;color:#fff;cursor:pointer;font-family:var(--font)}
+.img-prev{width:100%;height:75px;object-fit:cover;border-radius:var(--radius);margin-top:6px;display:none}
+.save-bar{position:sticky;bottom:0;background:var(--bg);padding:.75rem 0;display:flex;gap:8px;justify-content:flex-end;border-top:1.5px solid var(--border);margin-top:1rem}
+.save-btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;font-size:12px;font-weight:700;border-radius:8px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text);cursor:pointer;transition:all .15s;font-family:var(--font)}
+.save-btn:hover{border-color:var(--yellow);color:var(--yellow)}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.anim-slide{animation:slideIn .2s ease-out}
+/* Accordion detail */
+.course-row{margin-bottom:8px}
+.course-row-detail{display:none;margin-top:6px;animation:slideIn .2s ease-out}
+.course-row-detail.open{display:block}
+/* スマホ: バーグラフ2列 */
+@media(max-width:600px){
+  .bar-lbl{width:80px;font-size:10px}
+  .bar-val{width:34px;font-size:10px}
+  .tier-row-stats{gap:8px}
+  .tier-row-stat{font-size:10px}
+  .tier-row-stat span{font-size:12px}
+  .mc-val{font-size:18px}
+  .tabs{gap:3px}
+  .tab{font-size:11px;padding:6px 3px}
+  .tier-summary-grid{grid-template-columns:repeat(2,1fr)!important}
+  .metrics{grid-template-columns:repeat(2,1fr)!important}
+  .course-picker-grid{grid-template-columns:repeat(2,1fr)!important}
+  .course-grid{grid-template-columns:repeat(2,1fr)!important}
+  .modal-setup-grid{grid-template-columns:repeat(3,1fr)!important}
+  .rank-grid{grid-template-columns:repeat(6,1fr)!important}
+}
+/* キャラ・マシン設定 */
+.setup-panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
+.setup-row{display:flex;gap:16px;flex-wrap:wrap}
+.setup-item{flex:1;min-width:140px}
+.setup-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+.setup-card{display:flex;align-items:center;gap:10px;background:var(--bg);border:1.5px solid var(--border2);border-radius:var(--radius);padding:8px 10px;cursor:pointer;transition:all .15s}
+.setup-card:hover{border-color:var(--yellow)}
+.setup-img{width:44px;height:44px;object-fit:contain;border-radius:6px;background:var(--card);flex-shrink:0}
+.setup-img-ph{width:44px;height:44px;border-radius:6px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.setup-name{font-size:12px;font-weight:700;color:var(--text);line-height:1.3}
+.setup-hint{font-size:10px;color:var(--text3);margin-top:2px}
+/* 設定モーダル */
+.modal-setup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:320px;overflow-y:auto;padding:2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.modal-setup-grid::-webkit-scrollbar{width:5px}
+.modal-setup-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.setup-opt{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:8px 6px;cursor:pointer;text-align:center;transition:all .15s}
+.setup-opt:hover{border-color:var(--yellow);transform:translateY(-1px)}
+.setup-opt.opt-sel{border-color:var(--yellow);background:rgba(245,197,24,.1)}
+.setup-opt-img{width:44px;height:44px;object-fit:contain;margin:0 auto 4px;display:block;border-radius:4px;background:var(--card)}
+.setup-opt-img-ph{width:44px;height:44px;margin:0 auto 4px;display:flex;align-items:center;justify-content:center;font-size:24px;border-radius:4px;background:var(--card)}
+.setup-opt-name{font-size:9px;font-weight:700;color:var(--text2);line-height:1.3;word-break:keep-all}
+.setup-edit-btn{font-size:9px;padding:2px 6px;border-radius:4px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;margin-top:4px;font-family:var(--font)}
+.setup-edit-btn:hover{color:var(--yellow);border-color:var(--yellow)}
+/* tier analysis */
+.tier-row{display:flex;align-items:stretch;gap:0;margin-bottom:10px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+.tier-row-label{width:52px;display:flex;align-items:center;justify-content:center;font-family:var(--font-mk);font-size:15px;font-weight:800;flex-shrink:0;border-right:1px solid var(--border)}
+.tier-row-body{flex:1;padding:10px 14px;background:var(--card)}
+.tier-row-stats{display:flex;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+.tier-row-stat{font-size:11px;color:var(--text2)}
+.tier-row-stat span{font-size:14px;font-weight:800;font-family:var(--font-mk);color:var(--text);margin-left:4px}
+.tier-mini-bar-wrap{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.tier-mini-label{font-size:10px;color:var(--text3);width:60px;font-weight:600}
+.tier-mini-track{flex:1;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.tier-mini-fill{height:100%;border-radius:3px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+.tier-mini-val{font-size:10px;font-weight:700;width:36px;text-align:right;color:var(--text2)}
+.tier-no-data{font-size:11px;color:var(--text3);font-style:italic;padding:4px 0}
+.tier-section-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px;margin-top:4px}
+.tier-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:1.5rem}
+.tier-summary-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.tier-pts-bar-wrap{margin-top:4px}
+@keyframes barGrow{from{width:0}to{width:var(--w)}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="mk-header">
+  <div class="mk-header-icon">🏎</div>
+  <div class="mk-header-body">
+    <div class="mk-header-title">Mario Kart World Lounge Tracker</div>
+    <div class="mk-header-sub" id="hdr-sub">Mario Kart World Lounge &nbsp;·&nbsp; 24人 VS &nbsp;·&nbsp; 12 Race</div>
+  </div>
+  <div class="mk-header-badge">
+    <div class="mk-header-badge-item">VS 24</div>
+    <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:800;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font-mk);letter-spacing:1px;margin-top:4px">EN</button>
+  </div>
+</div>
+<div class="metrics" id="metrics"></div>
+<div class="tabs">
+  <button class="tab on" id="tab-btn-session" onclick="switchTab('session')">🏁 <span data-i18n="tab_session">試合入力</span></button>
+  <button class="tab" id="tab-btn-courses" onclick="switchTab('courses')">🗺 <span data-i18n="tab_courses">コース戦績</span></button>
+  <button class="tab" id="tab-btn-matches" onclick="switchTab('matches')">📋 <span data-i18n="tab_matches">試合履歴</span></button>
+  <button class="tab" id="tab-btn-ranking" onclick="switchTab('ranking')">🏅 <span data-i18n="tab_ranking">ランキング</span></button>
+  <button class="tab" id="tab-btn-chart" onclick="switchTab('chart')">📊 <span data-i18n="tab_chart">グラフ</span></button>
+  <button class="tab" id="tab-btn-tier" onclick="switchTab('tier')">🎯 Tier</button>
+  <button class="tab" id="tab-btn-help" onclick="switchTab('help')">❓ <span data-i18n="tab_help">使い方</span></button>
+</div>
+<div id="tab-session"><div id="session-area"></div></div>
+<div id="tab-courses" style="display:none">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+    <div class="sec-lbl">コース戦績</div>
+    <button class="save-btn" onclick="openRoadModal()">＋ 道を追加</button>
+  </div>
+  <div id="courses-accordion"></div>
+</div>
+<div id="tab-matches" style="display:none">
+  <div class="sec-lbl" style="margin-bottom:12px">試合履歴（最新順）</div>
+  <div id="match-list"></div>
+</div>
+<div id="tab-ranking" style="display:none">
+  <div class="sec-lbl" style="margin-bottom:10px">コース別ランキング</div>
+  <div class="sort-bar">
+    <button class="sort-btn on" onclick="setSort('avg')">平均順位が良い順</button>
+    <button class="sort-btn" onclick="setSort('rate')">入賞率が高い順</button>
+    <button class="sort-btn" onclick="setSort('tries')">試行回数が多い順</button>
+  </div>
+  <div id="rank-list"></div>
+</div>
+<div id="tab-chart" style="display:none">
+  <div class="sec-lbl" style="margin-bottom:10px" id="chart-avg-title">平均順位（低いほど良い）</div>
+  <div id="chart-avg" style="margin-bottom:1.5rem"></div>
+  <div class="sec-lbl" style="margin-bottom:10px" id="chart-rate-title">入賞率（%）</div>
+  <div id="chart-rate"></div>
+</div>
+<div id="tab-tier" style="display:none">
+  <div id="tier-analysis"></div>
+</div>
+<div id="tab-help" style="display:none">
+  <div id="help-content"></div>
+</div>
+<div class="save-bar">
+  <button class="save-btn" onclick="exportData()">💾 データを保存</button>
+  <label class="save-btn" style="cursor:pointer"><span id="import-label-text">📂 データを読込</span><input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)"></label>
+</div>
+</div>
+
+<div id="modal-setup" class="mbg" style="display:none" onclick="closeMBg('modal-setup',event)">
+  <div class="modal" style="width:380px">
+    <div class="modal-title" id="setup-modal-title">キャラクターを選択</div>
+    <div class="modal-note" id="setup-modal-note">使用するキャラクターを選んでください。</div>
+    <div class="modal-setup-grid" id="setup-modal-grid"></div>
+    <div class="mact" style="margin-top:1rem;justify-content:space-between">
+      <button class="bc" onclick="openAddSetupItem()">＋ 追加</button>
+      <button class="bc" onclick="closeM('modal-setup')">閉じる</button>
+    </div>
+  </div>
+</div>
+<div id="modal-setup-add" class="mbg" style="display:none" onclick="closeMBg('modal-setup-add',event)">
+  <div class="modal">
+    <div class="modal-title" id="setup-add-title">キャラクターを追加</div>
+    <div class="fr"><label class="fl">名前</label><input type="text" id="setup-add-name" placeholder="例: キャラ名"></div>
+    <div class="fr"><label class="fl">絵文字（省略可）</label><input type="text" id="setup-add-emoji" placeholder="🏎️"></div>
+    <div class="fr"><label class="fl">画像URL（省略可）</label><input type="text" id="setup-add-imgurl" placeholder="https://..."></div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin:4px 0">または</div>
+    <div class="fr"><label class="fl">画像ファイル</label><input type="file" id="setup-add-imgfile" accept="image/*"></div>
+    <img id="setup-add-preview" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:var(--card);display:none;margin:6px auto">
+    <div class="mact"><button class="bc" onclick="closeM('modal-setup-add')">キャンセル</button><button class="bs" onclick="saveSetupItem()">追加</button></div>
+  </div>
+</div>
+<div id="modal-img-setup" class="mbg" style="display:none" onclick="closeMBg('modal-img-setup',event)">
+  <div class="modal">
+    <div class="modal-title" id="img-setup-title">画像を変更</div>
+    <div class="fr"><label class="fl">画像URL</label><input type="text" id="img-setup-url" placeholder="https://..."></div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin:4px 0">または</div>
+    <div class="fr"><label class="fl">ファイル</label><input type="file" id="img-setup-file" accept="image/*"></div>
+    <img id="img-setup-prev" style="width:64px;height:64px;object-fit:contain;border-radius:8px;background:var(--card);display:none;margin:6px auto">
+    <div class="mact"><button class="bc" onclick="closeM('modal-img-setup')">キャンセル</button><button class="bs-r" onclick="clearSetupImg()">削除</button><button class="bs" onclick="saveSetupImg()">適用</button></div>
+  </div>
+</div>
+<div id="modal-road" class="mbg" style="display:none" onclick="closeMBg('modal-road',event)">
+  <div class="modal">
+    <div class="modal-title">🛣️ 道コースを追加</div>
+    <div class="modal-note">始点と終点を選択してください。</div>
+    <div class="fr"><label class="fl">始点コース</label><select id="road-from"></select></div>
+    <div class="fr"><label class="fl">終点コース</label><select id="road-to"></select></div>
+    <div class="fr"><label class="fl">道の名前（省略可）</label><input type="text" id="road-name" placeholder="例: マリサ→クッパ 道"></div>
+    <div class="fr"><label class="fl">絵文字（省略可）</label><input type="text" id="road-emoji" placeholder="🛣️"></div>
+    <div class="mact"><button class="bc" onclick="closeM('modal-road')">キャンセル</button><button class="bs" onclick="saveRoad()">追加</button></div>
+  </div>
+</div>
+
+<div id="modal-img" class="mbg" style="display:none" onclick="closeMBg('modal-img',event)">
+  <div class="modal">
+    <div class="modal-title" id="img-modal-title">コース画像を変更</div>
+    <div class="modal-note">画像URLを貼り付けるか、ファイルを選んでください。</div>
+    <div class="fr"><label class="fl">画像URL</label><input type="text" id="img-url" placeholder="https://..."></div>
+    <div style="text-align:center;font-size:12px;color:var(--text3);margin:6px 0">または</div>
+    <div class="fr"><label class="fl">ファイルをアップロード</label><input type="file" id="img-file" accept="image/*"></div>
+    <img id="img-prev" class="img-prev" alt="プレビュー">
+    <div class="mact"><button class="bc" onclick="closeM('modal-img')">キャンセル</button><button class="bs-r" onclick="clearImg()">削除</button><button class="bs" onclick="saveImg()">適用</button></div>
+  </div>
+</div>
+
+
+<div id="modal-edit" class="mbg" style="display:none" onclick="closeMBg('modal-edit',event)">
+  <div class="modal" style="width:380px">
+    <div class="modal-title">✏️ 試合を訂正</div>
+    <div class="modal-note">順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。</div>
+    <div id="edit-race-list"></div>
+    <div class="fr" style="margin-top:12px">
+      <label class="fl" id="edit-char-label">キャラクター</label>
+      <select id="edit-char" style="width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font)"></select>
+    </div>
+    <div class="fr">
+      <label class="fl" id="edit-kart-label">マシン</label>
+      <select id="edit-kart" style="width:100%;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font)"></select>
+    </div>
+    <div class="fr"><label class="fl" id="edit-memo-label">試合メモ</label>
+    <input type="text" id="edit-memo" placeholder="メモ（任意）"></div>
+    <div class="fr"><label class="fl" id="edit-tier-label">Tier</label>
+    <div class="tier-picker" id="edit-tier-picker"></div></div>
+    <div class="fr"><label class="fl" id="edit-date-label">日付</label><input type="date" id="edit-date"></div>
+    <div class="mact">
+      <button class="bc" onclick="closeM('modal-edit')">キャンセル</button>
+      <button class="bs-r" onclick="deleteMatch()" style="margin-right:auto">試合を削除</button>
+      <button class="bs" onclick="saveEditMatch()">保存</button>
+    </div>
+  </div>
+</div>
+<script>
+const RANK_PTS={1:15,2:12,3:10,4:9,5:9,6:8,7:8,8:7,9:7,10:6,11:6,12:6,13:5,14:5,15:5,16:4,17:4,18:4,19:3,20:3,21:3,22:2,23:2,24:1};
+function pts(rank){return RANK_PTS[rank]||1;}
+let topN=12; // 入賞基準順位（変更可能）
+const CUPS=[
+  {name:'キノコカップ',nameEn:'Mushroom Cup',courses:[
+    {id:'mario_bros',name:'マリオブラザーズサーキット',nameEn:'Mario Bros. Circuit',emoji:'🏟️',color:'#FAC775'},
+    {id:'crown_city1',name:'トロフィーシティ',nameEn:'Crown City',emoji:'🏆',color:'#378ADD'},
+    {id:'shupopo',name:'シュポポコースター',nameEn:'Whistlestop Summit',emoji:'🚂',color:'#5DCAA5'},
+    {id:'dk_space',name:'DKうちゅうセンター',nameEn:'DK Spaceport',emoji:'🚀',color:'#7F77DD'},
+  ]},
+  {name:'フラワーカップ',nameEn:'Flower Cup',courses:[
+    {id:'sansan',name:'サンサンさばく',nameEn:'Desert Hills',emoji:'🌵',color:'#EF9F27'},
+    {id:'heiho',name:'ヘイホーカーニバル',nameEn:'Shy Guy Bazaar',emoji:'🎪',color:'#F0997B'},
+    {id:'wario_stadium',name:'ワリオスタジアム',nameEn:'Wario Stadium',emoji:'🏈',color:'#888780'},
+    {id:'killer_ship',name:'キラーシップ',nameEn:'Airship Fortress',emoji:'💣',color:'#D85A30'},
+  ]},
+  {name:'スターカップ',nameEn:'Star Cup',courses:[
+    {id:'dk_snow',name:'DKスノーマウンテン',nameEn:'DK Pass',emoji:'🏔️',color:'#B5D4F4'},
+    {id:'rosetta',name:'ロゼッタてんもんだい',nameEn:'Starview Peak',emoji:'⭐',color:'#AFA9EC'},
+    {id:'ice_building',name:'アイスビルディング',nameEn:'Sky-High Sundae',emoji:'🧊',color:'#9FE1CB'},
+    {id:'wario_ship',name:'ワリオシップ',nameEn:'Wario Shipyard',emoji:'⚓',color:'#D3D1C7'},
+  ]},
+  {name:'こうらカップ',nameEn:'Shell Cup',courses:[
+    {id:'nokonoko',name:'ノコノコビーチ',nameEn:'Koopa Troopa Beach',emoji:'🐢',color:'#5DCAA5'},
+    {id:'riverside',name:'リバーサイドサファリ',nameEn:'Faraway Oasis',emoji:'🦁',color:'#97C459'},
+    {id:'peach_stadium1',name:'ピーチスタジアム',nameEn:'Peach Stadium',emoji:'🎀',color:'#ED93B1'},
+  ]},
+  {name:'バナナカップ',nameEn:'Banana Cup',courses:[
+    {id:'peach_beach',name:'ピーチビーチ',nameEn:'Peach Beach',emoji:'🌊',color:'#85B7EB'},
+    {id:'salty_town',name:'ソルティータウン',nameEn:'Salty Salty Speedway',emoji:'⛵',color:'#5DCAA5'},
+    {id:'dino_jungle',name:'ディノディノジャングル',nameEn:'Dino Dino Jungle',emoji:'🦕',color:'#97C459'},
+    {id:'hatena_temple',name:'ハテナしんでん',nameEn:'Great ? Block Ruins',emoji:'❓',color:'#FAC775'},
+  ]},
+  {name:'このはカップ',nameEn:'Leaf Cup',courses:[
+    {id:'fukupuku',name:'プクプクフォールズ',nameEn:'Cheep Cheep Falls',emoji:'🐡',color:'#85B7EB'},
+    {id:'shonyu',name:'ショーニューロード',nameEn:'Dandelion Depths',emoji:'🌼',color:'#F0997B'},
+    {id:'obake_cinema',name:'おばけシネマ',nameEn:'Boo Cinema',emoji:'👻',color:'#AFA9EC'},
+    {id:'honebone',name:'ホネホネツイスター',nameEn:'Dry Bones Burnout',emoji:'💀',color:'#D3D1C7'},
+  ]},
+  {name:'サンダーカップ',nameEn:'Lightning Cup',courses:[
+    {id:'momo_country',name:'モーモーカントリー',nameEn:'Moo Moo Meadows',emoji:'🐄',color:'#97C459'},
+    {id:'choco',name:'チョコマウンテン',nameEn:'Choco Mountain',emoji:'🍫',color:'#BA7517'},
+    {id:'kinopio',name:'キノピオファクトリー',nameEn:"Toad's Factory",emoji:'🏭',color:'#888780'},
+    {id:'koopa_castle',name:'クッパキャッスル',nameEn:"Bowser's Castle",emoji:'🏰',color:'#D85A30'},
+  ]},
+  {name:'スペシャルカップ',nameEn:'Special Cup',courses:[
+    {id:'donguri',name:'どんぐりツリーハウス',nameEn:'Acorn Heights',emoji:'🌰',color:'#97C459'},
+    {id:'mario_circuit',name:'マリオサーキット',nameEn:'Mario Circuit',emoji:'🌸',color:'#ED93B1'},
+    {id:'rainbow_road',name:'レインボーロード',nameEn:'Rainbow Road',emoji:'🌈',color:'#D4537E'},
+  ]},
+];
+// ===== コース略称マスタ =====
+// shortJa: 日本語略称（画像パス・道モード命名に使用）
+// shortEn: 英語略称（英語モード道命名に使用）
+const COURSE_ABBR={
+  mario_bros:    {shortJa:'マリブサ',  shortEn:'MBC'},
+  crown_city1:   {shortJa:'トロフィ',  shortEn:'CC'},
+  shupopo:       {shortJa:'シュポコ',  shortEn:'WS'},
+  dk_space:      {shortJa:'うちゅう',  shortEn:'DKS'},
+  sansan:        {shortJa:'サンさば',  shortEn:'rDH'},
+  heiho:         {shortJa:'ヘイカニ',  shortEn:'rSGB'},
+  wario_stadium: {shortJa:'ワリスタ',  shortEn:'rWS'},
+  killer_ship:   {shortJa:'キラシ',    shortEn:'rAF'},
+  dk_snow:       {shortJa:'スノマ',    shortEn:'rDKP'},
+  rosetta:       {shortJa:'ロゼてん',  shortEn:'SP'},
+  ice_building:  {shortJa:'アイビル',  shortEn:'rSHS'},
+  wario_ship:    {shortJa:'ワリシ',    shortEn:'rWSh'},
+  nokonoko:      {shortJa:'ノコビ',    shortEn:'rKTB'},
+  riverside:     {shortJa:'リバサ',    shortEn:'FO'},
+  peach_stadium1:{shortJa:'ピースタ',  shortEn:'PS'},
+  peach_beach:   {shortJa:'ピチビ',    shortEn:'rPB'},
+  salty_town:    {shortJa:'ソルティ',  shortEn:'SSS'},
+  dino_jungle:   {shortJa:'ディノジャン',shortEn:'rDDJ'},
+  hatena_temple: {shortJa:'ハテしん',  shortEn:'GBR'},
+  fukupuku:      {shortJa:'プクフォ',  shortEn:'CCF'},
+  shonyu:        {shortJa:'ショーニュー',shortEn:'DD'},
+  obake_cinema:  {shortJa:'おばシネ',  shortEn:'BCi'},
+  honebone:      {shortJa:'ホネツイ',  shortEn:'DBB'},
+  momo_country:  {shortJa:'モモカン',  shortEn:'rMMM'},
+  choco:         {shortJa:'チョコマ',  shortEn:'rCM'},
+  kinopio:       {shortJa:'キノファク',shortEn:'rTF'},
+  koopa_castle:  {shortJa:'クパキャ',  shortEn:'BC'},
+  donguri:       {shortJa:'どんツリ',  shortEn:'AH'},
+  mario_circuit: {shortJa:'マリサ',    shortEn:'MC'},
+  rainbow_road:  {shortJa:'にじ',      shortEn:'RR'},
+};
+// 略称取得ヘルパー（道モード命名・画像パスで使用）
+function cShort(c){
+  var ab=COURSE_ABBR[c.id];
+  if(!ab)return lang==='en'?(c.nameEn||c.name).slice(0,4):c.name.slice(0,4);
+  return lang==='en'?ab.shortEn:ab.shortJa;
+}
+const ROAD_CONNECTIONS={
+  choco:['mario_bros','crown_city1','shupopo','heiho','wario_stadium','fukupuku','momo_country','kinopio','koopa_castle','peach_stadium1'],
+  crown_city1:['mario_bros','shupopo','dk_space','sansan','wario_stadium','nokonoko','riverside','momo_country','choco','peach_stadium1'],
+  dino_jungle:['nokonoko','riverside','peach_beach','salty_town','hatena_temple'],
+  dk_snow:['rosetta','ice_building','wario_ship','salty_town','fukupuku','shonyu','momo_country'],
+  dk_space:['mario_bros','crown_city1','shupopo','sansan','nokonoko','peach_stadium1'],
+  donguri:['shonyu','obake_cinema','honebone','kinopio','mario_circuit'],
+  fukupuku:['dk_snow','rosetta','wario_ship','riverside','salty_town','shonyu','momo_country','choco','peach_stadium1'],
+  hatena_temple:['nokonoko','riverside','peach_beach','salty_town','dino_jungle'],
+  heiho:['mario_bros','sansan','wario_stadium','killer_ship','choco'],
+  honebone:['wario_stadium','killer_ship','obake_cinema','momo_country','kinopio','koopa_castle','donguri','mario_circuit'],
+  ice_building:['dk_snow','rosetta','wario_ship','salty_town','fukupuku','shonyu'],
+  killer_ship:['heiho','wario_stadium','honebone','kinopio','koopa_castle'],
+  kinopio:['mario_bros','wario_stadium','killer_ship','shonyu','honebone','momo_country','choco','koopa_castle','donguri','mario_circuit','peach_stadium1'],
+  koopa_castle:['wario_stadium','killer_ship','honebone','choco','kinopio','mario_circuit'],
+  mario_bros:['crown_city1','shupopo','sansan','heiho','wario_stadium','choco','kinopio'],
+  mario_circuit:['rosetta','shonyu','obake_cinema','honebone','momo_country','kinopio','koopa_castle','donguri','peach_stadium1'],
+  momo_country:['crown_city1','dk_snow','fukupuku','shonyu','honebone','choco','kinopio','mario_circuit','peach_stadium1'],
+  nokonoko:['crown_city1','dk_space','riverside','dino_jungle','peach_stadium1'],
+  obake_cinema:['rosetta','shonyu','honebone','donguri','mario_circuit'],
+  peach_beach:['wario_ship','riverside','salty_town','dino_jungle','hatena_temple'],
+  peach_stadium1:['crown_city1','nokonoko','riverside','fukupuku','momo_country','choco','kinopio','rainbow_road'],
+  riverside:['crown_city1','nokonoko','peach_beach','salty_town','dino_jungle','hatena_temple','fukupuku','peach_stadium1'],
+  rosetta:['dk_snow','ice_building','wario_ship','fukupuku','shonyu','obake_cinema','mario_circuit'],
+  salty_town:['dk_snow','wario_ship','riverside','peach_beach','dino_jungle','hatena_temple','fukupuku'],
+  sansan:['mario_bros','crown_city1','shupopo','heiho','nokonoko'],
+  shonyu:['dk_snow','rosetta','ice_building','fukupuku','obake_cinema','momo_country','kinopio','donguri','mario_circuit'],
+  shupopo:['mario_bros','crown_city1','dk_space','sansan','nokonoko','choco'],
+  wario_ship:['dk_snow','rosetta','ice_building','peach_beach','salty_town','fukupuku'],
+  wario_stadium:['mario_bros','crown_city1','heiho','killer_ship','honebone','choco','kinopio','koopa_castle'],
+};
+const BASE_COURSES=CUPS.flatMap(cup=>cup.courses.map(c=>({...c,cup:cup.name,isRoad:false})));
+let customRoads=[],courseRecords={},matchHistory=[],courseImages={};
+BASE_COURSES.forEach(c=>{courseRecords[c.id]=[];});
+// 旧crown_city2/peach_stadium2データをcrown_city1/peach_stadium1にマイグレーション
+(function(){
+  var migrate=[['crown_city2','crown_city1'],['peach_stadium2','peach_stadium1']];
+  migrate.forEach(function(pair){
+    if(courseRecords[pair[0]]){
+      if(!courseRecords[pair[1]])courseRecords[pair[1]]=[];
+      courseRecords[pair[1]]=courseRecords[pair[1]].concat(courseRecords[pair[0]]);
+      delete courseRecords[pair[0]];
+    }
+  });
+})();
+let selCourse=null,sortMode='avg',imgTargetId=null,imgDataUrl=null;
+let session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
+
+const TIERS=['F','EF','E','DE','D','CD','C','BC','B','A','S','X','SQ'];
+const TIER_LABEL={'F':'F','EF':'EF','E':'E','DE':'DE','D':'D','CD':'CD','C':'C','BC':'BC','B':'B','A':'A','S':'S','X':'X'};
+const DEFAULT_CHARS=[
+  {id:'mario',name:'マリオ',nameEn:'Mario',emoji:'🔴'},
+  {id:'luigi',name:'ルイージ',nameEn:'Luigi',emoji:'🟢'},
+  {id:'peach',name:'ピーチ',nameEn:'Peach',emoji:'🎀'},
+  {id:'yoshi',name:'ヨッシー',nameEn:'Yoshi',emoji:'🟩'},
+  {id:'bowser',name:'クッパ',nameEn:'Bowser',emoji:'🏰'},
+  {id:'toad',name:'キノピオ',nameEn:'Toad',emoji:'🍄'},
+  {id:'toadette',name:'キノピコ',nameEn:'Toadette',emoji:'🎀'},
+  {id:'koopa',name:'ノコノコ',nameEn:'Koopa Troopa',emoji:'🐢'},
+  {id:'wario',name:'ワリオ',nameEn:'Wario',emoji:'💛'},
+  {id:'waluigi',name:'ワルイージ',nameEn:'Waluigi',emoji:'🟣'},
+  {id:'babymario',name:'ベビィマリオ',nameEn:'Baby Mario',emoji:'👶'},
+  {id:'babyluigi',name:'ベビィルイージ',nameEn:'Baby Luigi',emoji:'👶'},
+  {id:'babypeach',name:'ベビィピーチ',nameEn:'Baby Peach',emoji:'👶'},
+  {id:'babydaisy',name:'ベビィデイジー',nameEn:'Baby Daisy',emoji:'👶'},
+  {id:'babyrosalina',name:'ベビィロゼッタ',nameEn:'Baby Rosalina',emoji:'👶'},
+  {id:'pauline',name:'ポリーン',nameEn:'Pauline',emoji:'🎤'},
+  {id:'heihei',name:'ヘイホー',nameEn:'Shy Guy',emoji:'😷'},
+  {id:'dk',name:'ドンキーコング',nameEn:'Donkey Kong',emoji:'🦍'},
+  {id:'daisy',name:'デイジー',nameEn:'Daisy',emoji:'🌼'},
+  {id:'rosalina',name:'ロゼッタ',nameEn:'Rosalina',emoji:'⭐'},
+  {id:'lakitu',name:'ジュゲム',nameEn:'Lakitu',emoji:'☁️'},
+  {id:'birdo',name:'キャサリン',nameEn:'Birdo',emoji:'🎵'},
+  {id:'kingboo',name:'キングテレサ',nameEn:'King Boo',emoji:'👻'},
+  {id:'bowserjr',name:'クッパJr.',nameEn:'Bowser Jr.',emoji:'🎪'},
+  {id:'hammer_bro',name:'ハンマーブロス',nameEn:'Hammer Bro',emoji:'🔨'},
+  {id:'pakkun',name:'パックンフラワー',nameEn:'Piranha Plant',emoji:'🌿'},
+  {id:'sidestepper',name:'カニ',nameEn:'Sidestepper',emoji:'🦀'},
+  {id:'choropoo',name:'チョロプー',nameEn:'Monty Mole',emoji:'🐭'},
+  {id:'hatchin',name:'ハッチン',nameEn:'Stingby',emoji:'🥚'},
+  {id:'penguin',name:'ペンギン',nameEn:'Penguin',emoji:'🐧'},
+  {id:'pukupuku',name:'プクプク',nameEn:'Cheep Cheep',emoji:'🐡'},
+  {id:'ushi',name:'ウシ',nameEn:'Cow',emoji:'🐄'},
+  {id:'patatenten',name:'パタテンテン',nameEn:'Para-Biddybud',emoji:'🪶'},
+  {id:'sanbo',name:'サンボ',nameEn:'Pokey',emoji:'🌵'},
+  {id:'yukidaruma',name:'ゆきだるま',nameEn:'Snowman',emoji:'⛄'},
+  {id:'gabon',name:'ガボン',nameEn:'Spike',emoji:'🪨'},
+  {id:'poihana',name:'ポイハナ',nameEn:'Cataquack',emoji:'🌺'},
+  {id:'monte',name:'モンテ',nameEn:'Pianta',emoji:'🌋'},
+  {id:'puu',name:'プー',nameEn:'Rocky Wrench',emoji:'🔧'},
+  {id:'tsukkon',name:'ツッコンドル',nameEn:'Conkdor',emoji:'🦅'},
+  {id:'telen',name:'テレン',nameEn:'Peepa',emoji:'👁️'},
+  {id:'basabasa',name:'バサバサ',nameEn:'Swoop',emoji:'🦇'},
+  {id:'fishbone',name:'フィッシュボーン',nameEn:'Fish Bone',emoji:'🦴'},
+  {id:'gamanee',name:'ガマネー',nameEn:'Coin Coffer',emoji:'🐸'},
+  {id:'rifton',name:'リフトン',nameEn:'Dolphin',emoji:'🐬'},
+  {id:'bull',name:'ブル',nameEn:"Chargin' Chuck",emoji:'🏈'},
+  {id:'goomba',name:'クリボー',nameEn:'Goomba',emoji:'🍄'},
+  {id:'wiggler',name:'ハナちゃん',nameEn:'Wiggler',emoji:'🐛'},
+  {id:'karon',name:'カロン',nameEn:'Dry Bones',emoji:'💀'},
+  {id:'nabbit',name:'トッテン',nameEn:'Nabbit',emoji:'🐰'},
+];
+const DEFAULT_KARTS=[
+  {id:'standard',name:'スタンダードカート',nameEn:'Standard Kart',emoji:'🏎️'},
+  {id:'ribbon',name:'リボンクラシカル',nameEn:'Plushbuggy',emoji:'🎀'},
+  {id:'turtle_buggy',name:'タートルバギー',nameEn:'Zoom Buggy',emoji:'🐢'},
+  {id:'rally_kart',name:'ラリーカート',nameEn:'Rally Kart',emoji:'🚗'},
+  {id:'kogeasso',name:'コゲッソー',nameEn:'Baby Blooper',emoji:'🦑'},
+  {id:'big_bull',name:'ビッグブル',nameEn:"Chargin' Truck",emoji:'🐂'},
+  {id:'standard_bike',name:'スタンダードバイク',nameEn:'Standard Bike',emoji:'🏍️'},
+  {id:'colorful_scooter',name:'カラフルスクーター',nameEn:'Cute Scoot',emoji:'🛵'},
+  {id:'pipe_bike',name:'ドカンバイク',nameEn:'Hyper Pipe',emoji:'🔧'},
+  {id:'rally_bike',name:'ラリーバイク',nameEn:'Rally Bike',emoji:'🏍️'},
+  {id:'mach_racer',name:'マッハレーサー',nameEn:'Reel Racer',emoji:'💨'},
+  {id:'dossy_wave',name:'ドッシーウェーブ',nameEn:'Funky Dorrie',emoji:'🌊'},
+  {id:'fire_charger',name:'ファイアチャージャー',nameEn:'Junkyard Hog',emoji:'🔥'},
+  {id:'royal_turbo',name:'ロイヤルターボ',nameEn:'Bowser Bruiser',emoji:'👑'},
+  {id:'patatenten_kart',name:'パタテンテン',nameEn:'Biddybuggy',emoji:'🪶'},
+  {id:'kero_road',name:'ケロケロード',nameEn:'Ribbit Revster',emoji:'🐸'},
+  {id:'b_dash',name:'Bダッシュ',nameEn:'B Dasher',emoji:'⚡'},
+  {id:'hot_rally',name:'ホットラリー',nameEn:'Hot Rod',emoji:'🌡️'},
+  {id:'lady_ride',name:'レディオライド',nameEn:'Mach Rocket',emoji:'🎀'},
+  {id:'w_chopper',name:'Wチョッパー',nameEn:'W-Twin Chopper',emoji:'✂️'},
+  {id:'fire_mobile',name:'ファイアモービル',nameEn:'Tune Thumper',emoji:'🔥'},
+  {id:'belt_trike',name:'ベルトライク',nameEn:'Tiny Titan',emoji:'⚙️'},
+  {id:'lobster',name:'ローブスター',nameEn:'Lobster Roller',emoji:'🦞'},
+  {id:'star_mobile',name:'スターモービル',nameEn:'Stellar Sled',emoji:'⭐'},
+  {id:'movie_star',name:'ムービースター',nameEn:'Cloud 9',emoji:'🎬'},
+  {id:'super_carpet',name:'スーパーカーペット',nameEn:'Carpet Flyer',emoji:'🟥'},
+  {id:'safari_cargo',name:'サファリカーゴ',nameEn:'Dread Sled',emoji:'🚙'},
+  {id:'mach_queen',name:'マッハクイーン',nameEn:'Roadster Royale',emoji:'👸'},
+  {id:'h2o',name:'H2O',nameEn:'Fin Twin',emoji:'💧'},
+  {id:'toy_dump',name:'トイダンプ',nameEn:"Li'l Dumpy",emoji:'🚛'},
+  {id:'koinobori',name:'こいのぼり',nameEn:'Koinobori',emoji:'🎏'},
+  {id:'dolphin_kick',name:'ドルフィンキック',nameEn:'Dolphin Dasher',emoji:'🐬'},
+  {id:'steam_bike',name:'スチームバイク',nameEn:'Loco Moto',emoji:'♨️'},
+  {id:'fc_robot_bike',name:'FCロボットバイク',nameEn:'R.O.B. H.O.G.',emoji:'🤖'},
+  {id:'ignition',name:'イグニッション',nameEn:'Blastronaut III',emoji:'🔑'},
+  {id:'mecha_koopa',name:'メカクッパ',nameEn:'Mecha Trike',emoji:'🏰'},
+  {id:'skeleton',name:'スケルトン',nameEn:'Pipe Frame',emoji:'💀'},
+  {id:'killer_head',name:'キラーヘッド',nameEn:'Billdozer',emoji:'💣'},
+  {id:'rally_gator',name:'ラリーゲイター',nameEn:'Rally Gator',emoji:'🐊'},
+  {id:'bowser_buggy',name:'バウザーバギー',nameEn:'Big Horn',emoji:'🏰'},
+  {id:'bumble_v',name:'ハッチン(車)',nameEn:'Bumble V',emoji:'🐝'},
+];
+let karts=[...DEFAULT_KARTS];
+let chars=[...DEFAULT_CHARS];
+let charImages={};
+let kartImages={};
+let setupModalMode=null; // 'char' | 'kart' | 'char-img-ID' | 'kart-img-ID'
+let expandedMatch=null,selCourseId=null,selRank=null,editMatchId=null,selTier=null;
+let selChar=chars.length>0?chars[0].id:null;
+let selKart=karts.length>0?karts[0].id:null;
+// 道モード
+let roadMode=false,roadFrom=null,roadTo=null;
+
+// 道モード — 一時表示用
+let tempRoad=null; // commitRoad後〜addRace前に一時表示する道オブジェクト
+
+function getAllCourses(){return[...BASE_COURSES,...customRoads];}
+function getUsedIds(){return new Set(session.races.map(r=>r.courseId));}
+// 言語依存ヘルパー
+function cN(c){return(lang==='en'&&c.nameEn)?c.nameEn:c.name;}
+function chrN(c){return(lang==='en'&&c.nameEn)?c.nameEn:c.name;}
+function ktN(k){return(lang==='en'&&k.nameEn)?k.nameEn:k.name;}
+function cupN(cup){return(lang==='en'&&cup.nameEn)?cup.nameEn:cup.name;}
+function rankPill(r){
+  const cls=r===1?'rk1':r===2?'rk2':r===3?'rk3':r<=12?'rk12':'rk-e';
+  const lbl=lang==='en'?r+'th':r+'位';
+  return '<span class="rk-pill '+cls+'">'+lbl+'</span>';
+}
+function stats(recs){if(!recs||!recs.length)return null;const tries=recs.length,avg=recs.reduce((s,r)=>s+r.rank,0)/tries,rate=recs.filter(r=>r.rank<=topN).length/tries*100;return{tries,avg,rate};}
+function badgeForCourse(id){
+  const s=stats(courseRecords[id]);
+  const lbl=lang==='en'?'Win':'入賞率';
+  if(!s)return'<span class="badge b-none">'+(lang==='en'?'No data':'未記録')+'</span>';
+  if(s.rate>=66)return '<span class="badge b-top">'+lbl+' '+Math.round(s.rate)+'%</span>';
+  if(s.rate>=33)return '<span class="badge b-mid">'+lbl+' '+Math.round(s.rate)+'%</span>';
+  return '<span class="badge b-low">'+lbl+' '+Math.round(s.rate)+'%</span>';
+}
+function defaultImgPath(c){
+  if(c.isRoad)return null;
+  var ab=COURSE_ABBR[c.id];
+  if(!ab)return null;
+  return 'images/'+ab.shortJa+'.avif';
+}
+// 小サムネ（race-row・match-race-row用）
+function thumbMini(c){
+  if(c.isRoad)return roadThumbInlineHtml(c,38,20,'3px');
+  var img=getThumbSrc(c);
+  if(img)return '<img class="race-thumb" src="'+img+'" alt="'+cN(c)+'">';
+  return '<span style="font-size:14px">'+c.emoji+'</span>';
+}
+// コース画像ソース取得
+function getThumbSrc(c){
+  if(courseImages[c.id])return courseImages[c.id];
+  if(c.isRoad)return null; // 道中はCSS重ね合わせで表示
+  return defaultImgPath(c);
+}
+// 道中コース画像合成キャッシュ {id: dataURL}
+
+// 道中コース インライン小サムネHTML（ランキング・グラフ用）
+function roadThumbInlineHtml(c, w, h, r){
+  var fromC=getAllCourses().find(function(x){return x.id===c.fromId;});
+  var toC=getAllCourses().find(function(x){return x.id===c.toId;});
+  var bgSrc=toC?(courseImages[toC.id]||defaultImgPath(toC)):null;
+  var fgSrc=fromC?(courseImages[fromC.id]||defaultImgPath(fromC)):null;
+  var rad=r||'4px';
+  var style='position:relative;display:inline-block;width:'+w+'px;height:'+h+'px;border-radius:'+rad+';overflow:hidden;flex-shrink:0;vertical-align:middle';
+  if(!bgSrc&&!fgSrc){
+    return '<div style="'+style+';background:var(--bg2);display:inline-flex;align-items:center;justify-content:center;font-size:'+(Math.round(h*0.6))+'px">🛣️</div>';
+  }
+  var bgStyle='width:100%;height:100%;object-fit:cover;object-position:right center;display:block';
+  var fgStyle='position:absolute;top:0;left:0;width:50%;height:100%;object-fit:cover;object-position:left center;border-right:1.5px solid rgba(255,255,255,0.65)';
+  return '<div style="'+style+'">'
+    +(bgSrc?'<img style="'+bgStyle+'" src="'+bgSrc+'" alt="">':'<div style="width:100%;height:100%;background:var(--bg2)"></div>')
+    +(fgSrc?'<img style="'+fgStyle+'" src="'+fgSrc+'" alt="">':'')
+    +'</div>';
+}
+// 道中コース CSS重ね合わせサムネ
+function roadThumbHtml(c, cls){
+  var fromC=getAllCourses().find(function(x){return x.id===c.fromId;});
+  var toC=getAllCourses().find(function(x){return x.id===c.toId;});
+  var bgSrc=toC?(courseImages[toC.id]||defaultImgPath(toC)):null;
+  var fgSrc=fromC?(courseImages[fromC.id]||defaultImgPath(fromC)):null;
+  if(!bgSrc&&!fgSrc){
+    // 両方なし: プレースホルダー
+    return '<div class="'+(cls||'cp-thumb-ph')+'" style="background:'+(c.color||'#333')+'22;aspect-ratio:600/315;display:flex;align-items:center;justify-content:center;font-size:22px">🛣️</div>';
+  }
+  if(!bgSrc){
+    // 終点なし: 始点のみ
+    return '<div class="road-img-wrap"><img class="road-img-bg" src="'+fgSrc+'" alt="'+cN(c)+'"></div>';
+  }
+  var fgHtml=fgSrc?'<img class="road-img-fg" src="'+fgSrc+'" alt="">':'';
+  return '<div class="road-img-wrap"><img class="road-img-bg" src="'+bgSrc+'" alt="'+cN(c)+'">'+fgHtml+'</div>';
+}
+function thumbHtml(c,cls='cthumb',phCls='cthumb-ph'){
+  if(c.isRoad)return roadThumbHtml(c,cls);
+  var img=courseImages[c.id]||defaultImgPath(c);
+  if(img)return '<img class="'+cls+'" src="'+img+'" alt="'+cN(c)+'">';
+  return '<div class="'+phCls+'" style="background:'+(c.color||'#333')+'22">'+c.emoji+'</div>';
+}
+
+function renderMetrics(){
+  const allRecs=Object.values(courseRecords).flat();
+  const total=allRecs.length,topHalf=allRecs.filter(r=>r.rank<=topN).length;
+  const topRate=total?Math.round(topHalf/total*100):0;
+  const avgs=Object.values(courseRecords).filter(r=>r.length>0).map(r=>r.reduce((s,x)=>s+x.rank,0)/r.length);
+  const overallAvg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'--';
+  const tm=matchHistory.length;
+  const avgPts=tm?(matchHistory.reduce((s,m)=>s+m.totalPts,0)/tm).toFixed(1):'--';
+  document.getElementById('metrics').innerHTML=''
+    +'<div class="mc"><div class="mc-lbl">'+t('metrics_matches')+'</div><div class="mc-val">'+tm+'</div><div class="mc-sub">'+t('metrics_recorded')+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">'+t('metrics_avg_pts')+'</div><div class="mc-val">'+avgPts+'</div><div class="mc-sub">'+t('metrics_per_match')+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">'+t('metrics_avg_rank')+'</div><div class="mc-val">'+overallAvg+'</div><div class="mc-sub">'+t('metrics_players')+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">'+topN+t('metrics_top_rate')+'</div><div class="mc-val">'+topRate+'%</div><div class="mc-sub">'+topHalf+'/'+total+(lang==='en'?' races':' レース')+'</div></div>';
+}
+
+// 50音/英字ソート（言語依存）
+function kanaSort(a,b){
+  if(lang==='en'){
+    const an=cN(a)||a.name, bn=cN(b)||b.name;
+    return an.localeCompare(bn,'en');
+  }
+  return a.name.localeCompare(b.name,'ja');
+}
+
+function renderSession(){
+  // コースピッカーのスクロール位置を保存
+  var _cpGrid=document.querySelector('.course-picker-grid');
+  var _cpScrollTop=_cpGrid?_cpGrid.scrollTop:0;
+  const used=getUsedIds();
+  const races=session.races,done=races.length;
+  const totalPts=races.reduce((s,r)=>s+pts(r.rank),0);
+  let raceListHtml=races.map((r,i)=>{const c=getAllCourses().find(x=>x.id===r.courseId);var cThumb=c?thumbMini(c):'';return '<div class="race-row"><div class="race-num">'+(i+1)+'</div><div class="race-course">'+cThumb+(c?' '+cN(c):'?')+'</div>'+rankPill(r.rank)+'<div class="race-pts">+'+pts(r.rank)+'pt</div><button class="race-del" onclick="deleteRace('+i+')">✕</button></div>';}).join('');
+  let summaryHtml='';
+  if(done>0){
+    const top12=races.filter(r=>r.rank<=topN).length;
+    const avgRank=(races.reduce((s,r)=>s+r.rank,0)/done).toFixed(1);
+    summaryHtml='<div class="session-summary">'
+      +'<div><div class="ss-item">'+(lang==='en'?'Total':'合計得点')+'</div><div class="ss-val" style="color:#F5C518">'+totalPts+'pt</div></div>'
+      +'<div><div class="ss-item">'+(lang==='en'?'Avg Rank':'平均順位')+'</div><div class="ss-val">'+avgRank+(lang==='en'?'':'位')+'</div></div>'
+      +'<div><div class="ss-item">'+topN+(lang==='en'?'+':'位以上')+'</div><div class="ss-val">'+top12+'/'+done+(lang==='en'?' races':'レース')+'</div></div>'
+      +'</div>';
+  }
+
+  // キャラ・マシン・Tier・入賞基準 → 常時表示（12コース後も変更可）
+  var setupPanelHtml=renderSetupPanel();
+
+  // Tier picker（常時表示）
+  var tierBtns=TIERS.map(function(tier){
+    var tSel=selTier===tier?' t-sel':'';
+    return '<button class="tier-btn tier-'+tier+tSel+'" onclick="pickTier(\''+tier+'\')">'+tier+'</button>';
+  }).join('');
+  var tierHtml='<div class="picker-label">'+t('session_tier_label')+'</div><div class="tier-picker">'+tierBtns+'</div>';
+
+  let pickerHtml='';
+  if(done<12){
+    // 50音/英字ソート・道コースは除外（道モード時は全コースから選択）、tempRoadは一時表示
+    const allForPicker=getAllCourses().filter(c=>!c.isRoad||(tempRoad&&c.id===tempRoad.id));
+    const sortedCourses=allForPicker.slice().sort(kanaSort);
+    const courseCards=sortedCourses.map(c=>{
+      const isUsed=used.has(c.id);
+      var th=thumbHtml(c,'cp-thumb','cp-thumb-ph');
+      var roadCls='';
+      var roadDim=false;
+      if(roadMode){
+        if(roadFrom===c.id) roadCls=' road-from-sel';
+        else if(roadTo===c.id) roadCls=' road-to-sel';
+        else if(roadFrom){
+          // 始点選択済み：接続先テーブルにないコースはdim
+          var allowed=ROAD_CONNECTIONS[roadFrom]||[];
+          if(allowed.length>0&&!allowed.includes(c.id)) roadDim=true;
+        }
+      }
+      // tempRoad: 選択中の道を強調表示
+      var isTempSel=tempRoad&&c.id===tempRoad.id;
+      var normalSel=(!roadMode&&(selCourseId===c.id||isTempSel))?' cp-sel':'';
+      var tempBadge=isTempSel?'<div class="cp-road-lbl" style="background:rgba(159,225,203,.9);color:#001a10">✓ '+(lang==="en"?'INTR':'道')+'</div>':'';
+      var dimStyle=roadDim?'opacity:.25;pointer-events:none;':'';
+      return '<div class="cp-card'+(c.isRoad?' road-type':'')+normalSel+roadCls+(isUsed?' used':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer;'+dimStyle+'">'
+        +th
+        +'<div class="cp-name">'+cN(c)+'</div>'
+        +(isUsed&&!roadMode?'<div class="cp-warn">⚠ '+( lang==='en'?'Already used':'選択済み')+'</div>':'')
+        +(c.isRoad&&!isTempSel?'<div class="cp-road-lbl">'+(lang==="en"?'INTR':'道')+'</div>':'')
+        +tempBadge
+        +'</div>';
+    }).join('');
+
+    // 道モードバー
+    var fromC=roadFrom?getAllCourses().find(c=>c.id===roadFrom):null;
+    var toC=roadTo?getAllCourses().find(c=>c.id===roadTo):null;
+    var roadModeBar='<div class="road-mode-bar">'
+      +'<button class="road-mode-btn'+(roadMode?' on':'')+'" onclick="toggleRoadMode()">'+t('road_mode')+'</button>'
+      +(roadMode
+        ?('<span class="road-mode-step">'
+          +'<span class="road-sel-from'+(fromC?' filled':'')+'">'+t('road_from')+' '+(fromC?'<img class="road-sel-img" src="'+(courseImages[fromC.id]||defaultImgPath(fromC))+'" alt="'+cN(fromC)+'">&nbsp;'+cN(fromC):t('road_unsel'))+'</span>'
+          +' → '
+          +'<span class="road-sel-to'+(toC?' filled':'')+'">'+t('road_to')+' '+(toC?'<img class="road-sel-img" src="'+(courseImages[toC.id]||defaultImgPath(toC))+'" alt="'+cN(toC)+'">&nbsp;'+cN(toC):t('road_unsel'))+'</span>'
+          +(fromC&&toC?(' <button class="add-race-btn" style="width:auto;margin:0;padding:5px 14px;font-size:12px" onclick="commitRoad()">'+t('road_add_btn')+'</button>'):'')
+          +'</span>')
+        :('<span style="font-size:11px;color:var(--text3)">'+t('road_off_hint')+'</span>'))
+      +'</div>';
+
+    let rankGridHtml='';
+    for(let r=1;r<=24;r++){
+      const cls=r<=3?'top3':r<=topN?'top12':'';
+      var rSel=selRank===r?' rk-sel':'';
+      rankGridHtml+='<button class="rank-btn '+cls+rSel+'" onclick="pickRank('+r+')">'+r+'</button>';
+    }
+    const canAdd=!roadMode&&selCourseId&&selRank;
+    const selC=canAdd?getAllCourses().find(c=>c.id===selCourseId):null;
+    var selCImg=canAdd&&selC?(courseImages[selC.id]||defaultImgPath(selC)):null;
+    var selCThumb=selCImg?('<img style="width:32px;height:18px;object-fit:cover;border-radius:3px;vertical-align:middle;margin-right:4px" src="'+selCImg+'" alt="'+cN(selC)+'">'):'' ;
+    var addBtnLabel=canAdd?(selCThumb+' Race '+(done+1)+' ＋'+pts(selRank)+'pt'):(t('session_add_btn'));
+
+    // Selected course indicator
+    var selCObj=selCourseId?getAllCourses().find(function(c){return c.id===selCourseId;}):null;
+    var selIndicator='';
+    if(selCObj){
+      var selThumb;
+      if(selCObj.isRoad){
+        var _fc=getAllCourses().find(function(x){return x.id===selCObj.fromId;});
+        var _tc=getAllCourses().find(function(x){return x.id===selCObj.toId;});
+        var _bg=_tc?(courseImages[_tc.id]||defaultImgPath(_tc)):null;
+        var _fg=_fc?(courseImages[_fc.id]||defaultImgPath(_fc)):null;
+        selThumb='<div style="position:relative;width:52px;height:27px;border-radius:5px;overflow:hidden;border:1.5px solid var(--yellow);flex-shrink:0">'
+          +(_bg?'<img style="width:100%;height:100%;object-fit:cover;object-position:right center" src="'+_bg+'" alt="">':'')
+          +(_fg?'<img style="position:absolute;top:0;left:0;width:50%;height:100%;object-fit:cover;object-position:left center;border-right:1.5px solid rgba(255,255,255,.65)" src="'+_fg+'" alt="">':'')
+          +'</div>';
+      } else {
+        var _si=courseImages[selCObj.id]||defaultImgPath(selCObj);
+        selThumb=_si?('<img style="width:52px;height:27px;object-fit:cover;border-radius:5px;border:1.5px solid var(--yellow);flex-shrink:0" src="'+_si+'" alt="'+cN(selCObj)+'">')
+          :('<div style="width:52px;height:27px;background:'+(selCObj.color||'#333')+'33;border-radius:5px;border:1.5px solid var(--yellow);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">?</div>');
+      }
+      selIndicator='<div style="display:flex;align-items:center;gap:8px;padding:7px 12px;background:rgba(245,197,24,.08);border:1.5px solid var(--yellow);border-radius:var(--radius);margin-bottom:8px">'
+        +'<span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;text-transform:uppercase">'+(lang==='en'?'Selected Track:':'選択中:')+'</span>'
+        +selThumb
+        +'<span style="font-size:12px;font-weight:800;color:var(--yellow)">'+cN(selCObj)+'</span>'
+        +(selCObj.isRoad?'<span style="font-size:9px;font-weight:700;color:#9FE1CB;padding:2px 6px;border:1px solid #9FE1CB;border-radius:4px">'+(lang==='en'?'INTR':'道')+'</span>':'')
+        +'</div>';
+    }
+    pickerHtml=roadModeBar
+      +selIndicator
+      +'<div class="picker-label">Race '+(done+1)+' — '+t('session_course_label')+'</div>'
+      +'<div class="course-picker-grid">'+courseCards+'</div>'
+      +(roadMode
+        ?''
+        :('<div class="picker-label">'+t('session_rank_label')+'</div>'
+          +'<div class="rank-grid">'+rankGridHtml+'</div>'
+          +'<div id="dup-warn" style="margin-top:8px;padding:7px 12px;background:rgba(196,36,45,.15);border:1px solid #c4242d;border-radius:8px;font-size:11px;font-weight:700;color:#ff8080;text-align:center;opacity:0;transition:opacity .3s">'+t('dup_warn')+'</div>'
+          +'<button class="add-race-btn" onclick="addRace()"'+(canAdd?'':' disabled')+'>'+addBtnLabel+'</button>'));
+  } else {
+    pickerHtml='<div style="padding:10px 14px;background:rgba(46,170,74,.1);border:1px solid var(--green);border-radius:var(--radius);font-size:12px;font-weight:700;color:#5dca8a;text-align:center;margin-top:10px">'+t('session_done')+'</div>';
+  }
+
+  var canFinish=done===12&&selTier;
+  var finishBtnLabel=canFinish?t('session_finish'):t('session_finish_wait');
+  var finishBtnStyle=canFinish?'':'opacity:.4;cursor:default;animation:none';
+  var finishBtn=done===12?('<button class="finish-btn" onclick="finishSession()"'+(canFinish?'':' disabled')+' style="'+finishBtnStyle+'">'+finishBtnLabel+'</button>'):'';
+  var memoHtml='<div style="margin-top:14px"><div class="picker-label">'+t('session_memo_label')+'</div>'
+    +'<textarea id="session-memo" rows="2" style="width:100%;font-size:12px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);resize:vertical;font-family:var(--font);outline:none" placeholder="'+t('session_memo_ph')+'" oninput="session.memo=this.value">'+(session.memo||'')+'</textarea></div>';
+  var cancelBtn='<button class="reset-btn" onclick="cancelSession()"'+(done===0?' disabled style="opacity:.35;cursor:default"':'')+'>'+t('session_reset')+'</button>';
+
+  document.getElementById('session-area').innerHTML=''
+    +'<div class="session-panel">'
+    +'<div class="session-hdr">'
+    +'<div><div class="session-title">'+t('session_title')+'</div><div class="session-prog">'+done+' / 12 '+t('session_prog')+'</div></div>'
+    +'<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +cancelBtn
+    +'<input type="date" value="'+session.date+'" onchange="session.date=this.value" style="font-size:12px;padding:6px 8px;border:1.5px solid var(--border2);border-radius:8px;background:var(--bg2);color:var(--text);font-family:var(--font)">'
+    +'</div></div>'
+    +'<div class="progress-bar"><div class="progress-fill" style="width:'+Math.round(done/12*100)+'%"></div></div>'
+    +setupPanelHtml
+    +tierHtml
+    +summaryHtml
+    +'<div>'+(raceListHtml||'<div class="empty" style="padding:1rem">'+t('session_first')+'</div>')+'</div>'
+    +pickerHtml
+    +memoHtml
+    +'</div>'
+    +finishBtn;
+  // コースピッカーのスクロール位置を復元
+  if(_cpScrollTop>0){
+    var _cpGridNew=document.querySelector('.course-picker-grid');
+    if(_cpGridNew)_cpGridNew.scrollTop=_cpScrollTop;
+  }
+}
+
+function pickTier(tier){selTier=tier;renderSession();autoSave();}
+function toggleRoadMode(){
+  roadMode=!roadMode;
+  roadFrom=null;roadTo=null;
+  renderSession();
+}
+function commitRoad(){
+  if(!roadFrom||!roadTo)return;
+  var fromC=getAllCourses().find(c=>c.id===roadFrom);
+  var toC=getAllCourses().find(c=>c.id===roadTo);
+  if(!fromC||!toC){alert(lang==='en'?'Track not found':'コースが見つかりません');return;}
+  var exists=customRoads.find(r=>r.fromId===roadFrom&&r.toId===roadTo);
+  var roadObj;
+  if(exists){
+    roadObj=exists;
+  } else {
+    // 命名規則: 始点の頭4文字→終点の頭4文字
+    var fromShort=cShort(fromC);
+    var toShort=cShort(toC);
+    var autoName=fromShort+'→'+toShort;
+    var promptMsg=lang==='en'?'Intermission name (optional):':'道の名前（省略可）:';
+    var name=prompt(promptMsg,autoName)||autoName;
+    var id='road_'+roadFrom+'_'+roadTo+'_'+Date.now();
+    roadObj={id:id,name:name,nameEn:name,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
+    customRoads.push(roadObj);
+    courseRecords[id]=[];
+    renderCourseGrid();
+  }
+  // 道モードOFF・tempRoadに設定して通常モードへ・作成した道を自動選択
+  roadMode=false;roadFrom=null;roadTo=null;
+  tempRoad=roadObj;
+  selCourseId=roadObj.id;selRank=null;
+  renderSession();autoSave();
+  setTimeout(()=>{const el=document.querySelector('.rank-grid');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},80);
+}
+function pickCourse(id){
+  if(roadMode){
+    if(!roadFrom){
+      roadFrom=id;
+      renderSession();
+    } else if(!roadTo){
+      if(id===roadFrom){roadFrom=null;renderSession();return;}
+      // 接続先に含まれないコースはタップ無効
+      var allowed=ROAD_CONNECTIONS[roadFrom]||[];
+      if(allowed.length>0&&!allowed.includes(id))return;
+      roadTo=id;
+      renderSession();
+    } else {
+      // 両方選択済み → 再選択
+      roadFrom=id;roadTo=null;
+      renderSession();
+    }
+    return;
+  }
+  const isUsed=getUsedIds().has(id);
+  selCourseId=id;
+  renderSession();
+  autoSave();
+  if(isUsed){
+    const warn=document.getElementById('dup-warn');
+    if(warn){warn.style.opacity='1';setTimeout(()=>{warn.style.opacity='0';},2200);}
+  }
+  setTimeout(()=>{const el=document.querySelector('.rank-grid');if(el)el.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+}
+function pickRank(r){selRank=r;renderSession();autoSave();}
+function addRace(){
+  if(!selCourseId||!selRank)return;
+  session.races.push({courseId:selCourseId,rank:selRank});
+  selCourseId=null;selRank=null;tempRoad=null;
+  renderSession();autoSave();
+}
+function deleteRace(idx){session.races.splice(idx,1);selCourseId=null;selRank=null;tempRoad=null;renderSession();autoSave();}
+function finishSession(){
+  if(session.races.length!==12){alert(lang==='en'?'Please enter 12 races.':'12レース分の入力が必要です');return;}
+  const totalPts=session.races.reduce((s,r)=>s+pts(r.rank),0);
+  const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart,memo:session.memo||'',topN};
+  matchHistory.unshift(match);
+  session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,memo:(lang==='en'?'Match #':'試合 #')+matchHistory.length});});
+  session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
+  selCourseId=null;selRank=null;selTier=null;tempRoad=null;
+  autoSave();renderMetrics();renderSession();
+  alert(lang==='en'?'🏆 Match saved! Total: '+totalPts+' pt':'🏆 試合を記録しました！ 合計 '+totalPts+' pt');
+}
+function cancelSession(){if(session.races.length===0&&!selTier&&!selCourseId)return;if(!confirm(lang==='en'?'Reset this match?':'リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;selTier=null;roadMode=false;roadFrom=null;roadTo=null;tempRoad=null;renderSession();autoSave();}
+
+function renderCourseGrid(){
+  var courses=getAllCourses().slice().sort(kanaSort);
+  var html='';
+  courses.forEach(function(c){
+    var sel=selCourse===c.id?' sel':'';
+    var isOpen=selCourse===c.id;
+    html+='<div class="course-row">';
+    // カード
+    html+='<div class="ccard'+(c.isRoad?' road-type':'')+sel+'" data-course-id="'+c.id+'">';
+    // 左: サムネ（cthumb-wrap でラップ）
+    html+='<div class="cthumb-wrap">';
+    html+=thumbHtml(c,'cthumb','cthumb-ph');
+    html+=(c.isRoad?'<div class="road-badge">'+(lang==="en"?'INTR':'道')+'</div>':'');
+    html+='<button class="img-btn" data-img-id="'+c.id+'">'+(lang==='en'?'Edit':'画像変更')+'</button>';
+    html+='</div>';
+    // 右: テキスト情報
+    html+='<div class="cinfo"><div class="cname">'+cN(c)+'</div>';
+    html+='<div class="cmeta">'+badgeForCourse(c.id)+'</div></div></div>';
+    // accordion detail
+    html+='<div class="course-row-detail'+(isOpen?' open':'')+'" id="detail-'+c.id+'">';
+    if(isOpen) html+=buildDetailHTML(c.id);
+    html+='</div>';
+    html+='</div>';
+  });
+  document.getElementById('courses-accordion').innerHTML=html;
+}
+function selectCourse(id){
+  // 同じコースをクリックしたら閉じる
+  if(selCourse===id){
+    selCourse=null;
+    var prevDetail=document.getElementById('detail-'+id);
+    if(prevDetail){prevDetail.classList.remove('open');prevDetail.innerHTML='';}
+    var prevCard=document.querySelector('[data-course-id="'+id+'"]');
+    if(prevCard)prevCard.classList.remove('sel');
+    return;
+  }
+  // 前の選択を閉じる
+  if(selCourse){
+    var oldDetail=document.getElementById('detail-'+selCourse);
+    if(oldDetail){oldDetail.classList.remove('open');oldDetail.innerHTML='';}
+    var oldCard=document.querySelector('[data-course-id="'+selCourse+'"]');
+    if(oldCard)oldCard.classList.remove('sel');
+  }
+  selCourse=id;
+  var card=document.querySelector('[data-course-id="'+id+'"]');
+  if(card)card.classList.add('sel');
+  var det=document.getElementById('detail-'+id);
+  if(!det)return;
+  det.innerHTML=buildDetailHTML(id);
+  det.classList.add('open');
+  // カードが見えるようにスクロール（画面外の場合のみ）
+  setTimeout(function(){
+    var rect=card.getBoundingClientRect();
+    if(rect.top<0||rect.bottom>window.innerHeight){
+      card.scrollIntoView({behavior:'smooth',block:'nearest'});
+    }
+  },50);
+  // イベント委任
+  det.onclick=function(e){
+    var btn=e.target.closest('[data-img-id]');
+    if(btn){openImgModal(btn.getAttribute('data-img-id'));return;}
+    var delRec=e.target.closest('[data-del-rec]');
+    if(delRec){delCourseRec(delRec.getAttribute('data-del-course'),parseInt(delRec.getAttribute('data-del-rec')));return;}
+    var delRoad=e.target.closest('[data-del-road]');
+    if(delRoad){deleteRoad(delRoad.getAttribute('data-del-road'));return;}
+  };
+}
+
+function buildDetailHTML(id){
+  var c=getAllCourses().find(function(x){return x.id===id;});
+  if(!c)return'';
+  var recs=courseRecords[id]||[];
+  var s=stats(recs);
+  var iconHtml;
+  if(c.isRoad){
+    var _dfc=getAllCourses().find(function(x){return x.id===c.fromId;});
+    var _dtc=getAllCourses().find(function(x){return x.id===c.toId;});
+    var _dbg=_dtc?(courseImages[_dtc.id]||defaultImgPath(_dtc)):null;
+    var _dfg=_dfc?(courseImages[_dfc.id]||defaultImgPath(_dfc)):null;
+    iconHtml='<div style="position:relative;width:80px;height:42px;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);flex-shrink:0">'
+      +(_dbg?'<img style="width:100%;height:100%;object-fit:cover;object-position:right center" src="'+_dbg+'" alt="">':'<div style="width:100%;height:100%;background:var(--bg2)"></div>')
+      +(_dfg?'<img style="position:absolute;top:0;left:0;width:50%;height:100%;object-fit:cover;object-position:left center;border-right:1.5px solid rgba(255,255,255,.5)" src="'+_dfg+'" alt="">':'')
+      +'</div>';
+  } else {
+    var _img=courseImages[id]||defaultImgPath(c);
+    iconHtml=_img
+      ?('<img class="d-thumb" src="'+_img+'" alt="'+cN(c)+'">')
+      :('<div style="width:80px;height:42px;background:'+(c.color||'#333')+'22;border-radius:8px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:22px">'+c.emoji+'</div>');
+  }
+  var histHtml=recs.length?recs.slice().reverse().map(function(r,i){
+    return '<div class="hist-row">'
+      +'<div class="h-num">'+(recs.length-i)+'</div>'
+      +rankPill(r.rank)
+      +'<div class="h-date">'+r.date+(r.memo?' — '+r.memo:'')+'</div>'
+      +'<button class="del-btn" data-del-rec="'+(recs.length-1-i)+'" data-del-course="'+id+'">✕</button>'
+      +'</div>';
+  }).join(''):('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
+  var roadInfo=c.isRoad
+    ?('<div style="font-size:11px;color:var(--text2);margin-bottom:.75rem;display:flex;gap:6px;align-items:center;background:var(--bg2);padding:6px 10px;border-radius:8px;border:1px solid var(--border)">'
+      +'<span style="font-weight:700">'+c.fromName+'</span><span>→</span><span style="font-weight:700">'+c.toName+'</span>'
+      +'<button class="del-btn" data-del-road="'+id+'" style="margin-left:auto">'+(lang==="en"?'Delete':'道を削除')+'</button>'
+      +'</div>')
+    :'';
+  var statsHtml='';
+  if(s){
+    statsHtml='<div class="dstats">'
+      +(lang==='en'
+      ?(  '<div class="ds"><div class="ds-l">Attempts</div><div class="ds-v">'+s.tries+'</div></div>'
+        +'<div class="ds"><div class="ds-l">Avg Rank</div><div class="ds-v">'+s.avg.toFixed(1)+'</div></div>'
+        +'<div class="ds"><div class="ds-l">Top '+topN+'+ Rate</div><div class="ds-v">'+Math.round(s.rate)+'%</div></div>'
+        +'<div class="ds"><div class="ds-l">Best Rank</div><div class="ds-v">'+Math.min.apply(null,recs.map(function(r){return r.rank;}))+'</div></div>')
+      :('<div class="ds"><div class="ds-l">試行回数</div><div class="ds-v">'+s.tries+'回</div></div>'
+        +'<div class="ds"><div class="ds-l">平均順位</div><div class="ds-v">'+s.avg.toFixed(1)+'位</div></div>'
+        +'<div class="ds"><div class="ds-l">'+topN+'位以上率</div><div class="ds-v">'+Math.round(s.rate)+'%</div></div>'
+        +'<div class="ds"><div class="ds-l">最高順位</div><div class="ds-v">'+Math.min.apply(null,recs.map(function(r){return r.rank;}))+'位</div></div>'))
+      +'</div>';
+  }
+  return '<div class="detail anim-slide">'
+    +'<div class="d-hdr">'+iconHtml
+    +'<div><div class="d-name">'+cN(c)+'</div><div class="d-cup">'+(lang=='en'&&c.cupEn?c.cupEn:c.cup)+'</div></div>'
+    +'<div style="margin-left:auto"><button class="save-btn" data-img-id="'+id+'">'+( lang==="en"?'Change Image':'画像変更')+'</button></div>'
+    +'</div>'
+    +roadInfo
+    +statsHtml
+    +(lang==='en'?'<div class="sec-lbl" style="margin-bottom:8px">Race History</div>':'<div class="sec-lbl" style="margin-bottom:8px">レース履歴</div>')
+    +histHtml
+    +'</div>';
+}
+function delCourseRec(cid,idx){
+  if(!confirm(lang==='en'?'Delete this record?':'この記録を削除しますか？'))return;
+  courseRecords[cid].splice(idx,1);
+  var prevSel=selCourse;
+  selCourse=null;
+  renderMetrics();renderCourseGrid();
+  if(prevSel)selectCourse(prevSel);
+  autoSave();
+}
+function renderMatches(){
+  if(!matchHistory.length){document.getElementById('match-list').innerHTML=(lang==='en'?'<div class="empty">No matches recorded yet.</div>':'<div class="empty">まだ試合の記録がありません</div>');return;}
+  var maxPts=Math.max.apply(null,matchHistory.map(function(m){return m.totalPts;}));
+  document.getElementById('match-list').innerHTML=matchHistory.map(function(m,i){
+    var ptsClass=m.totalPts>=maxPts*0.75?'pts-high':m.totalPts>=maxPts*0.5?'pts-mid':'pts-low';
+    var isExp=expandedMatch===m.id;
+    var memoLine=m.memo?('<div style="font-size:11px;color:var(--text2);padding:6px 10px;background:var(--bg2);border-radius:6px;margin-top:6px;border-left:2px solid var(--border2)">📝 '+m.memo+'</div>'):'';
+    var detailHtml='';
+    if(isExp){
+      var raceRows=m.races.map(function(r,ri){
+        var c=getAllCourses().find(function(x){return x.id===r.courseId;});
+        return '<div class="match-race-row">'
+          +'<span style="width:24px;font-weight:700;font-family:var(--font-mk)">'+(ri+1)+'</span>'
+          +'<span style="flex:1;display:flex;align-items:center;gap:4px">'+(c?thumbMini(c)+' '+cN(c):(lang=='en'?'Unknown':'不明'))+'</span>'
+          +rankPill(r.rank)
+          +'<span style="width:40px;text-align:right;color:var(--yellow);font-weight:700">+'+pts(r.rank)+'pt</span>'
+          +'</div>';
+      }).join('');
+      detailHtml='<div class="match-detail">'+raceRows+'</div>';
+    }
+    var tierBadge=m.tier?('<span class="tier-badge tier-'+m.tier+'" style="margin-left:6px">'+m.tier+'</span>'):'';
+    var ch=chars.find(function(c){return c.id===m.charId;});
+    var kt=karts.find(function(k){return k.id===m.kartId;});
+    var chSrc=ch?(charImages[ch.id]||charImgPath(ch)):null;
+    var ktSrc=kt?(kartImages[kt.id]||kartImgPath(kt)):null;
+    var chHtml=ch?(chSrc?'<img src="'+chSrc+'" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle"> ':ch.emoji+' '):'';
+    var ktHtml=kt?(ktSrc?'<img src="'+ktSrc+'" style="width:16px;height:16px;object-fit:cover;border-radius:3px;vertical-align:middle"> ':kt.emoji+' '):'';
+    var parts=[ch?(chHtml+chrN(ch)):'',kt?(ktHtml+ktN(kt)):''].filter(Boolean);
+    var charKartStr=parts.length?' · '+parts.join(' / '):'';
+    var avgRankStr=(m.races.reduce(function(s,r){return s+r.rank;},0)/m.races.length).toFixed(1);
+    var top12cnt=m.races.filter(function(r){return r.rank<=topN;}).length;
+    return '<div class="match-card" onclick="toggleMatch('+m.id+')">'
+      +'<div class="match-hdr">'
+      +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
+      +'<span class="match-no">'+(lang==="en"?"Match #":"試合 #")+(matchHistory.length-i)+"</span>"
+      +tierBadge
+      +'<span style="font-size:11px;color:var(--text3);margin-left:2px">'+m.date+'</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<div class="match-pts '+ptsClass+'">'+m.totalPts+' pt</div>'
+      +'<button class="save-btn" style="font-size:10px;padding:4px 10px" onclick="event.stopPropagation();openEditMatch('+m.id+')">'+( lang==="en"?'✏️ Edit':'✏️ 訂正')+'</button>'
+      +'</div></div>'
+      +'<div class="match-sub">'+m.races.length+(lang==="en"?' races':'レース')+' · '+(lang==="en"?'Avg ':'平均')+avgRankStr+(lang==="en"?'':'位')+' · '+topN+(lang==="en"?'th+':'位以上')+top12cnt+'/'+m.races.length+(lang==="en"?' races':'レース')+charKartStr+'</div>'
+      +memoLine+detailHtml
+      +'</div>';
+  }).join('');
+}
+function toggleMatch(id){expandedMatch=expandedMatch===id?null:id;renderMatches();}
+function renderRanking(){
+  var items=getAllCourses().map(function(c){return {c:c,s:stats(courseRecords[c.id]||[])};}).filter(function(x){return x.s;});
+  if(sortMode==='avg')items.sort(function(a,b){return a.s.avg-b.s.avg;});
+  if(sortMode==='rate')items.sort(function(a,b){return b.s.rate-a.s.rate;});
+  if(sortMode==='tries')items.sort(function(a,b){return b.s.tries-a.s.tries;});
+  var medals=['🥇','🥈','🥉'];
+  var medalColors=['#F5C518','#85B7EB','#5dca8a'];
+  document.getElementById('rank-list').innerHTML=items.length?items.map(function(item,i){
+    var medal=medals[i]||('<span style="font-size:13px;font-weight:700;color:var(--text3)">'+(i+1)+'</span>');
+    var valStr=sortMode==='avg'?item.s.avg.toFixed(1)+(lang==='en'?'':' 位'):sortMode==='rate'?Math.round(item.s.rate)+'%':item.s.tries+(lang==='en'?' times':'回');
+    var subStr=sortMode!=='avg'?(lang==='en'?'Avg '+item.s.avg.toFixed(1):'平均 '+item.s.avg.toFixed(1)+'位'):(lang==='en'?'Win '+Math.round(item.s.rate)+'%':'入賞率 '+Math.round(item.s.rate)+'%');
+    var color=medalColors[i]||'var(--text)';
+    return '<div class="rnk-row">'
+      +'<div style="font-size:16px;width:28px;text-align:center">'+medal+'</div>'
+      +'<div style="flex-shrink:0">'+(item.c.isRoad?roadThumbInlineHtml(item.c,48,26,'4px'):('<img src="'+(courseImages[item.c.id]||defaultImgPath(item.c))+'" style="width:48px;height:26px;object-fit:cover;border-radius:4px;display:block" alt="'+cN(item.c)+'">' ))+'</div>'
+      +'<div style="flex:1"><div style="font-size:12px;font-weight:700">'+cN(item.c)+'</div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+(lang=='en'&&item.c.cupEn?item.c.cupEn:item.c.cup)+' · '+item.s.tries+(lang=='en'?' tries':'回')+'</div></div>'
+      +'<div style="text-align:right"><div style="font-size:14px;font-weight:800;font-family:var(--font-mk);color:'+color+'">'+valStr+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+subStr+'</div></div></div>';
+  }).join(''):('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
+}
+function setSort(mode){
+  sortMode=mode;
+  document.querySelectorAll('.sort-btn').forEach(function(btn,i){btn.classList.toggle('on',['avg','rate','tries'][i]===mode);});
+  renderRanking();
+}
+function renderChart(){
+  var el=document.getElementById('chart-rate-title');
+  if(el)el.textContent=lang==='en'?(topN+t('chart_rate_title')):(topN+'位以上入賞率（%）');
+  var items=getAllCourses().map(function(c){return {c:c,s:stats(courseRecords[c.id]||[])};}).filter(function(x){return x.s;});
+  var maxAvg=Math.max.apply(null,items.map(function(x){return x.s.avg;}).concat([1]));
+  var sortedAvg=items.slice().sort(function(a,b){return a.s.avg-b.s.avg;});
+  document.getElementById('chart-avg').innerHTML=sortedAvg.map(function(item){
+    var thumbHtmlChart=item.c.isRoad?roadThumbInlineHtml(item.c,28,15,'2px'):('<img src="'+(courseImages[item.c.id]||defaultImgPath(item.c))+'" style="width:28px;height:15px;object-fit:cover;border-radius:2px;flex-shrink:0" alt="'+cN(item.c)+'">');
+    return '<div class="bar-row"><div class="bar-lbl" style="display:flex;align-items:center;gap:4px">'+thumbHtmlChart+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cN(item.c)+'</span></div>'
+      +'<div class="bar-track"><div class="bar-avg" style="width:'+Math.round(item.s.avg/maxAvg*100)+'%"></div></div>'
+      +'<div class="bar-val">'+item.s.avg.toFixed(1)+(lang==="en"?'':'位')+'</div></div>';
+  }).join('')||('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
+  var sortedRate=items.slice().sort(function(a,b){return b.s.rate-a.s.rate;});
+  document.getElementById('chart-rate').innerHTML=sortedRate.map(function(item){
+    var thumbHtmlChart=item.c.isRoad?roadThumbInlineHtml(item.c,28,15,'2px'):('<img src="'+(courseImages[item.c.id]||defaultImgPath(item.c))+'" style="width:28px;height:15px;object-fit:cover;border-radius:2px;flex-shrink:0" alt="'+cN(item.c)+'">');
+    return '<div class="bar-row"><div class="bar-lbl" style="display:flex;align-items:center;gap:4px">'+thumbHtmlChart+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+cN(item.c)+'</span></div>'
+      +'<div class="bar-track"><div class="bar-rate" style="width:'+Math.round(item.s.rate)+'%"></div></div>'
+      +'<div class="bar-val">'+Math.round(item.s.rate)+'%</div></div>';
+  }).join('')||('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
+}
+function openRoadModal(){
+  var opts=BASE_COURSES.map(function(c){return '<option value="'+c.id+'">'+c.emoji+' '+cN(c)+'</option>';}).join('');
+  document.getElementById('road-from').innerHTML=opts;
+  document.getElementById('road-to').innerHTML=opts;
+  document.getElementById('road-to').selectedIndex=1;
+  document.getElementById('road-name').value='';
+  document.getElementById('road-emoji').value='';
+  document.getElementById('modal-road').style.display='flex';
+}
+function saveRoad(){
+  var fromId=document.getElementById('road-from').value;
+  var toId=document.getElementById('road-to').value;
+  if(fromId===toId){alert(lang==='en'?'From and To must be different.':'始点と終点が同じです');return;}
+  var fromC=BASE_COURSES.find(function(c){return c.id===fromId;});
+  var toC=BASE_COURSES.find(function(c){return c.id===toId;});
+  var name=document.getElementById('road-name').value.trim()||(cShort(fromC)+'→'+cShort(toC));
+  var id='road_'+fromId+'_'+toId+'_'+Date.now();
+  var newRoad={id:id,name:name,nameEn:name,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:fromId,toId:toId,fromName:fromC.name,toName:toC.name};
+  customRoads.push(newRoad);
+  courseRecords[id]=[];
+  closeM('modal-road');renderCourseGrid();renderMetrics();renderSession();autoSave();
+}
+function deleteRoad(id){
+  if(!confirm(lang==='en'?'Delete this intermission?':'削除しますか？'))return;
+  customRoads=customRoads.filter(function(r){return r.id!==id;});
+  delete courseRecords[id];delete courseImages[id];
+  selCourse=null;
+  renderCourseGrid();renderMetrics();autoSave();
+}
+function openImgModal(id){
+  imgTargetId=id;imgDataUrl=null;
+  var c=getAllCourses().find(function(x){return x.id===id;});
+  document.getElementById('img-modal-title').textContent=c.emoji+' '+cN(c)+' — '+(lang==='en'?'Change Image':'画像変更');
+  document.getElementById('img-url').value=courseImages[id]&&!courseImages[id].startsWith('data:')?courseImages[id]:'';
+  document.getElementById('img-file').value='';
+  var prev=document.getElementById('img-prev');
+  if(courseImages[id]){prev.src=courseImages[id];prev.style.display='block';}else{prev.style.display='none';}
+  document.getElementById('modal-img').style.display='flex';
+}
+function saveImg(){
+  if(imgDataUrl)courseImages[imgTargetId]=imgDataUrl;
+  else{var url=document.getElementById('img-url').value.trim();if(url)courseImages[imgTargetId]=url;}
+  closeM('modal-img');
+  var prevSel=selCourse;selCourse=null;
+  renderCourseGrid();renderSession();
+  if(prevSel)selectCourse(prevSel);
+  autoSave();
+}
+function clearImg(){
+  delete courseImages[imgTargetId];
+  closeM('modal-img');
+  var prevSel=selCourse;selCourse=null;
+  renderCourseGrid();renderSession();
+  if(prevSel)selectCourse(prevSel);
+  autoSave();
+}
+function _bindImgUrl(){document.getElementById('img-url').addEventListener('input',function(){
+  var prev=document.getElementById('img-prev');
+  if(this.value){prev.src=this.value;prev.style.display='block';}else prev.style.display='none';
+  imgDataUrl=null;
+});}
+function _bindImgFile(){document.getElementById('img-file').addEventListener('change',function(){
+  var file=this.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){imgDataUrl=e.target.result;var prev=document.getElementById('img-prev');prev.src=imgDataUrl;prev.style.display='block';};
+  reader.readAsDataURL(file);
+});}
+// ===== i18n =====
+let lang='ja';
+const I18N={
+  ja:{
+    tab_session:'試合入力', tab_courses:'コース戦績', tab_matches:'試合履歴',
+    tab_ranking:'ランキング', tab_chart:'グラフ', tab_help:'使い方',
+    hdr_sub:'Mario Kart World Lounge &nbsp;·&nbsp; 24人 VS &nbsp;·&nbsp; 12 Race',
+    metrics_matches:'試合数', metrics_avg_pts:'平均得点', metrics_avg_rank:'総合 平均順位',
+    metrics_top_rate:'位以上入賞率', metrics_recorded:'記録済み',
+    metrics_per_match:'1試合あたり', metrics_players:'24人中',
+    session_title:'🏁 試合入力', session_prog:'レース完了',
+    session_reset:'リセット', session_tier_label:'Tier を選択',
+    session_course_label:'コース選択', session_rank_label:'順位を選択',
+    session_memo_ph:'アイテム運が悪かった、体調万全など…',
+    session_memo_label:'試合メモ（任意）',
+    session_add_btn:'コースと順位を選んでください',
+    session_finish:'🏆 試合を完了して戦績に追加！',
+    session_finish_wait:'🏆 Tierを選択してください',
+    session_done:'✅ 12レース入力完了！Tier を選択して試合を確定してください。',
+    session_first:'最初のコースを選択してください',
+    road_mode:'🛣️ 道中コース', road_off_hint:'ONにすると2タップで道中コースを記録',
+    road_from:'始点:', road_to:'終点:', road_unsel:'未選択',
+    road_add_btn:'道として追加',
+    road_name_prompt:'道の名前（省略可）:',
+    road_rank_prompt:'の順位を入力（1〜24）',
+    dup_warn:'⚠ このコースは既に記録されています。このまま追加されます。',
+    courses_title:'コース戦績', courses_add_road:'＋ 道を追加',
+    matches_title:'試合履歴（最新順）',
+    ranking_title:'コース別ランキング',
+    sort_avg:'平均順位が良い順', sort_rate:'入賞率が高い順', sort_tries:'試行回数が多い順',
+    chart_avg_title:'平均順位（低いほど良い）',
+    chart_rate_title:'位以上入賞率（%）',
+    tier_summary:'Tier別サマリー', tier_detail:'Tier別詳細',
+    edit_title:'✏️ 試合を訂正',
+    edit_note:'順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。',
+    edit_char:'キャラクター', edit_kart:'マシン',
+    edit_memo_label:'試合メモ', edit_tier_label:'Tier', edit_date_label:'日付',
+    edit_cancel:'キャンセル', edit_delete:'試合を削除', edit_save:'保存',
+    btn_save_data:'💾 データを保存', btn_load_data:'📂 データを読込',
+    char_label:'キャラクター', kart_label:'カート',
+    top_n_label:'入賞基準:', top_n_btn:'変更',
+    top_n_unit:'位以上',
+  },
+  en:{
+    tab_session:'Match Input', tab_courses:'Track Records', tab_matches:'Match History',
+    tab_ranking:'Ranking', tab_chart:'Charts', tab_help:'Help',
+    hdr_sub:'Mario Kart World Lounge &nbsp;·&nbsp; 24P VS &nbsp;·&nbsp; 12 Race',
+    metrics_matches:'Matches', metrics_avg_pts:'Avg Score', metrics_avg_rank:'Overall Avg Rank',
+    metrics_top_rate:'th+ Rate', metrics_recorded:'recorded',
+    metrics_per_match:'per match', metrics_players:'out of 24',
+    session_title:'🏁 Match Input', session_prog:'Races done',
+    session_reset:'Reset', session_tier_label:'Select Tier',
+    session_course_label:'Select Track', session_rank_label:'Select Rank',
+    session_memo_ph:'e.g. Bad items, felt great…',
+    session_memo_label:'Match Note (optional)',
+    session_add_btn:'Select a course and rank',
+    session_finish:'🏆 Submit Match!',
+    session_finish_wait:'🏆 Select a Tier first',
+    session_done:'✅ 12 races done! Select Tier to submit.',
+    session_first:'Select the first course',
+    road_mode:'🛣️ Intermission', road_off_hint:'Tap 2 tracks to record an Intermission',
+    road_from:'From Track:', road_to:'To Track:', road_unsel:'none',
+    road_add_btn:'Add as Intermission',
+    road_name_prompt:'Intermission name (optional):',
+    road_rank_prompt:' — enter rank (1–24)',
+    dup_warn:'⚠ Already recorded. Will be added again.',
+    courses_title:'Track Records', courses_add_road:'＋ Add Intermission',
+    matches_title:'Match History (latest first)',
+    ranking_title:'Track Ranking',
+    sort_avg:'Best Avg Rank', sort_rate:'Highest Win Rate', sort_tries:'Most Attempts',
+    chart_avg_title:'Average Rank (lower = better)',
+    chart_rate_title:'th+ Win Rate (%)',
+    tier_summary:'Tier Summary', tier_detail:'Tier Detail',
+    edit_title:'✏️ Edit Match',
+    edit_note:'Edit rank, character, kart, tier or date, then save.',
+    edit_char:'Character', edit_kart:'Kart',
+    edit_memo_label:'Note', edit_tier_label:'Tier', edit_date_label:'Date',
+    edit_cancel:'Cancel', edit_delete:'Delete Match', edit_save:'Save',
+    btn_save_data:'💾 Export Data', btn_load_data:'📂 Import Data',
+    char_label:'Character', kart_label:'Kart',
+    top_n_label:'Win cutoff:', top_n_btn:'Change',
+    top_n_unit:'th+',
+    intermission_mode:'Intermission', intermission_badge:'INTR',
+  }
+};
+function t(key){return (I18N[lang]&&I18N[lang][key])||I18N['ja'][key]||key;}
+function toggleLang(){
+  lang=lang==='ja'?'en':'ja';
+  document.getElementById('lang-toggle').textContent=lang==='ja'?'EN':'JA';
+  applyI18n();
+  renderMetrics();renderSession();renderCourseGrid();
+  if(document.getElementById('tab-matches').style.display!=='none')renderMatches();
+  if(document.getElementById('tab-ranking').style.display!=='none')renderRanking();
+  if(document.getElementById('tab-chart').style.display!=='none')renderChart();
+  if(document.getElementById('tab-tier').style.display!=='none')renderTierAnalysis();
+  if(document.getElementById('tab-help').style.display!=='none')renderHelp();
+  autoSave();
+}
+function applyI18n(){
+  document.getElementById('hdr-sub').innerHTML=t('hdr_sub');
+  // static tab labels via data-i18n
+  document.querySelectorAll('[data-i18n]').forEach(function(el){
+    el.textContent=t(el.getAttribute('data-i18n'));
+  });
+  // save bar
+  var sb=document.querySelector('.save-bar');
+  if(sb){
+    var btns=sb.querySelectorAll('button,.save-btn');
+    if(btns[0])btns[0].innerHTML=t('btn_save_data');
+  }
+  var importLbl=document.getElementById('import-label-text');
+  if(importLbl)importLbl.textContent=t('btn_load_data');
+  // modal-edit static labels
+  document.querySelector('#modal-edit .modal-title').textContent=t('edit_title');
+  document.querySelector('#modal-edit .modal-note').textContent=t('edit_note');
+  var ecl=document.getElementById('edit-char-label');if(ecl)ecl.textContent=t('edit_char');
+  var ekl=document.getElementById('edit-kart-label');if(ekl)ekl.textContent=t('edit_kart');
+  var eml=document.getElementById('edit-memo-label');if(eml)eml.textContent=t('edit_memo_label');
+  var etl=document.getElementById('edit-tier-label');if(etl)etl.textContent=t('edit_tier_label');
+  var edl=document.getElementById('edit-date-label');if(edl)edl.textContent=t('edit_date_label');
+  var ecancel=document.querySelector('#modal-edit .bc');if(ecancel)ecancel.textContent=t('edit_cancel');
+  var edelete=document.querySelector('#modal-edit .bs-r');if(edelete)edelete.textContent=t('edit_delete');
+  var esave=document.querySelector('#modal-edit .bs');if(esave)esave.textContent=t('edit_save');
+  // courses tab header
+  var cTitle=document.querySelector('#tab-courses .sec-lbl');
+  if(cTitle)cTitle.textContent=t('courses_title');
+  var cRoadBtn=document.querySelector('#tab-courses .save-btn');
+  if(cRoadBtn)cRoadBtn.textContent=t('courses_add_road');
+  // matches tab header
+  var mTitle=document.querySelector('#tab-matches .sec-lbl');
+  if(mTitle)mTitle.textContent=t('matches_title');
+  // ranking tab header
+  var rTitle=document.querySelector('#tab-ranking .sec-lbl');
+  if(rTitle)rTitle.textContent=t('ranking_title');
+  // chart titles
+  var caTitle=document.querySelector('#tab-chart .sec-lbl');
+  if(caTitle)caTitle.textContent=t('chart_avg_title');
+  var caTitle2=document.getElementById('chart-avg-title');
+  if(caTitle2)caTitle2.textContent=t('chart_avg_title');
+  var crTitle=document.getElementById('chart-rate-title');
+  if(crTitle)crTitle.textContent=topN+t('chart_rate_title');
+  // sort buttons
+  var sortBtns=document.querySelectorAll('.sort-btn');
+  if(sortBtns[0])sortBtns[0].textContent=t('sort_avg');
+  if(sortBtns[1])sortBtns[1].textContent=t('sort_rate');
+  if(sortBtns[2])sortBtns[2].textContent=t('sort_tries');
+  // 言語依存の描画を再実行
+  renderSession();
+  renderCourseGrid();
+  renderMetrics();
+  if(document.getElementById('tab-ranking').style.display!=='none')renderRanking();
+  if(document.getElementById('tab-chart').style.display!=='none')renderChart();
+  if(document.getElementById('tab-matches').style.display!=='none')renderMatches();
+}
+
+// ===== Help =====
+function renderHelp(){
+  var isEn=lang==='en';
+  var el=document.getElementById('help-content');
+  if(!el)return;
+  var sections=isEn?[
+    {icon:'🏁',title:'Match Input',body:`
+<p>Record one match = 12 races.</p>
+<ol>
+<li>Select a <strong>Tier</strong> (F–X / SQ)</li>
+<li>Pick a <strong>Course</strong> from the card grid (sorted A–Z)</li>
+<li>Pick a <strong>Rank</strong> (1–24)</li>
+<li>Tap <em>"Add Race N"</em> — repeat 12 times</li>
+<li>Tap <strong>🏆 Submit Match</strong> to save</li>
+</ol>
+<p>After 12 races the course picker hides; you can still change Tier / Character / Kart before submitting.</p>
+<p>Tap ✕ on any race row to remove it. <em>Reset</em> clears the whole match.</p>`},
+    {icon:'🛣️',title:'Road Mode',body:`
+<p>Road sections connect two courses on the map. To record one:</p>
+<ol>
+<li>Tap <strong>🛣️ Road Mode</strong> in the session panel</li>
+<li>Tap the <span style="color:#9FE1CB;font-weight:700">From</span> course (turns teal)</li>
+<li>Tap the <span style="color:#F5C518;font-weight:700">To</span> course (turns yellow)</li>
+<li>Tap <strong>Add as Road</strong> — enter a name (optional)</li>
+<li>Road Mode turns off automatically; the new road is pre-selected so just pick a rank</li>
+</ol>
+<p>Road courses appear in <em>Course Records</em> tab only — not in the session picker after creation.</p>
+<p>If the same From→To road already exists it will be reused.</p>`},
+    {icon:'🗺',title:'Course Records',body:`
+<p>All 28 courses + custom roads sorted A–Z. Tap a card to expand stats and race history.</p>
+<p>Tap <strong>画像変更 / Image</strong> on any card to set a thumbnail (URL or file upload).</p>
+<p>Tap <strong>＋ Add Road</strong> to manually create a road course.</p>`},
+    {icon:'📋',title:'Match History',body:`<p>All matches newest-first. Tap a card to expand race details. Tap <strong>✏️ Edit</strong> to change rank, character, kart, tier, date or note. <strong>Delete Match</strong> is permanent.</p>`},
+    {icon:'🏅',title:'Ranking',body:`<p>Sort courses by best average rank, highest win rate, or most attempts.</p>`},
+    {icon:'📊',title:'Charts',body:`<p>Bar charts for average rank (lower = better) and win rate by course.</p>`},
+    {icon:'🎯',title:'Tier Analysis',body:`<p>Per-tier breakdown: match count, average score, average rank, win rate, best/worst score, and a sparkline of recent results.</p>`},
+    {icon:'💾',title:'Data',body:`<p><strong>Export Data</strong> — downloads a JSON backup.<br><strong>Import Data</strong> — restores from a JSON file (auto-saved to localStorage immediately).<br>Data auto-saves to localStorage on every action.</p>`},
+    {icon:'⚙️',title:'Settings',body:`<p><strong>Character / Kart</strong> — tap the panel in Match Input to choose. Add custom entries with ＋ Add.<br><strong>Win Cutoff</strong> — change the "placement" threshold (default: top 12).<br><strong>Course images</strong> — set per-course thumbnails in Course Records.</p>`},
+  ]:[
+    {icon:'🏁',title:'試合入力',body:`
+<p>1試合 = 12レースを記録します。</p>
+<ol>
+<li><strong>Tier</strong> を選択（F〜X / SQ）</li>
+<li>カードグリッドから<strong>コース</strong>を選択（50音順）</li>
+<li><strong>順位</strong>（1〜24位）を選択</li>
+<li>「レースN を追加」をタップ → 12回繰り返す</li>
+<li><strong>🏆 試合を完了して戦績に追加！</strong> をタップ</li>
+</ol>
+<p>12レース完了後はコースピッカーが隠れますが、Tier・キャラ・マシンは引き続き変更できます。</p>
+<p>レース行右の ✕ で削除、<em>リセット</em> で全クリアできます。</p>`},
+    {icon:'🛣️',title:'道中コース',body:`
+<p>コース間の「道」セクションを記録できます。</p>
+<ol>
+<li>試合入力パネルの <strong>🛣️ 道中コース</strong> をタップしてONにする</li>
+<li><span style="color:#9FE1CB;font-weight:700">始点</span> コースをタップ（緑枠）</li>
+<li><span style="color:#F5C518;font-weight:700">終点</span> コースをタップ（黄枠）</li>
+<li><strong>道として追加</strong> をタップ → 名前を入力（省略可）</li>
+<li>道モードが自動でOFFになり、作成した道が自動選択状態になるので、あとは順位を選ぶだけ</li>
+</ol>
+<p>作成した道は<em>コース戦績</em>タブにのみ表示されます（試合入力パネルへの追加なし）。</p>
+<p>同じ始点→終点の道が既に存在する場合は既存の道が再利用されます。</p>`},
+    {icon:'🗺',title:'コース戦績',body:`
+<p>全28コース＋カスタム道を50音順で表示。カードをタップすると戦績・履歴が展開されます。</p>
+<p>各カードの <strong>画像変更</strong> ボタンからサムネイルを設定できます（URL or ファイル）。</p>
+<p><strong>＋ 道を追加</strong> から手動で道コースを登録できます。</p>`},
+    {icon:'📋',title:'試合履歴',body:`<p>全試合を新しい順で表示。カードをタップして詳細を展開。<strong>✏️ 訂正</strong> で順位・キャラ・マシン・Tier・日付・メモを変更できます。<strong>試合を削除</strong> は取り消し不可です。</p>`},
+    {icon:'🏅',title:'ランキング',body:`<p>コースを「平均順位が良い順」「入賞率が高い順」「試行回数が多い順」で並び替えて表示します。</p>`},
+    {icon:'📊',title:'グラフ',body:`<p>コース別の平均順位（低いほど良い）と入賞率（%）を棒グラフで表示します。</p>`},
+    {icon:'🎯',title:'Tier分析',body:`<p>Tier別に試合数・平均得点・平均順位・入賞率・最高/最低得点・得点推移スパークラインを表示します。</p>`},
+    {icon:'💾',title:'データ管理',body:`<p><strong>データを保存</strong> — JSON形式でエクスポート。<br><strong>データを読込</strong> — JSONをインポート（即座にlocalStorageに保存されます）。<br>操作のたびに自動保存されるので、リロードしてもデータは消えません。</p>`},
+    {icon:'⚙️',title:'設定',body:`<p><strong>キャラ・マシン</strong> — 試合入力パネルのカードをタップして変更。＋追加からカスタム登録も可能です。<br><strong>入賞基準</strong> — デフォルト12位以内を任意の順位に変更できます。<br><strong>コース画像</strong> — コース戦績タブの各カードから設定できます。</p>`},
+  ];
+  var pts_table=isEn
+    ?'<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">Rank</th><th style="padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">Pts</th><th style="text-align:left;padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">Rank</th><th style="padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">Pts</th></tr></thead><tbody>'
+    +'<tr><td style="padding:3px 8px">1st</td><td style="padding:3px 8px;color:var(--yellow);font-weight:800;font-family:var(--font-mk)">15</td><td style="padding:3px 8px">13–15th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">5</td></tr>'
+    +'<tr><td style="padding:3px 8px">2nd</td><td style="padding:3px 8px;color:var(--yellow);font-weight:800;font-family:var(--font-mk)">12</td><td style="padding:3px 8px">16–18th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">4</td></tr>'
+    +'<tr><td style="padding:3px 8px">3rd</td><td style="padding:3px 8px;color:var(--yellow);font-weight:800;font-family:var(--font-mk)">10</td><td style="padding:3px 8px">19–21st</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">3</td></tr>'
+    +'<tr><td style="padding:3px 8px">4–5th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">9</td><td style="padding:3px 8px">22–23rd</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">2</td></tr>'
+    +'<tr><td style="padding:3px 8px">6–7th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">8</td><td style="padding:3px 8px">24th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">1</td></tr>'
+    +'<tr><td style="padding:3px 8px">8–9th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">7</td><td></td><td></td></tr>'
+    +'<tr><td style="padding:3px 8px">10–12th</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">6</td><td></td><td></td></tr>'
+    +'</tbody></table>'
+    :'<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr><th style="text-align:left;padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">順位</th><th style="padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">得点</th><th style="text-align:left;padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">順位</th><th style="padding:4px 8px;color:var(--text3);border-bottom:1px solid var(--border)">得点</th></tr></thead><tbody>'
+    +'<tr><td style="padding:3px 8px">1位</td><td style="padding:3px 8px;color:var(--yellow);font-weight:800;font-family:var(--font-mk)">15pt</td><td style="padding:3px 8px">13〜15位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">5pt</td></tr>'
+    +'<tr><td style="padding:3px 8px">2位</td><td style="padding:3px 8px;color:var(--yellow);font-weight:800;font-family:var(--font-mk)">12pt</td><td style="padding:3px 8px">16〜18位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">4pt</td></tr>'
+    +'<tr><td style="padding:3px 8px">3位</td><td style="padding:3px 8px;color:var(--yellow);font-weight:800;font-family:var(--font-mk)">10pt</td><td style="padding:3px 8px">19〜21位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">3pt</td></tr>'
+    +'<tr><td style="padding:3px 8px">4〜5位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">9pt</td><td style="padding:3px 8px">22〜23位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">2pt</td></tr>'
+    +'<tr><td style="padding:3px 8px">6〜7位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">8pt</td><td style="padding:3px 8px">24位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">1pt</td></tr>'
+    +'<tr><td style="padding:3px 8px">8〜9位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">7pt</td><td></td><td></td></tr>'
+    +'<tr><td style="padding:3px 8px">10〜12位</td><td style="padding:3px 8px;font-weight:700;font-family:var(--font-mk)">6pt</td><td></td><td></td></tr>'
+    +'</tbody></table>';
+  el.innerHTML='<div style="padding-bottom:2rem">'
+    +sections.map(function(s){
+      return '<div style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:12px">'
+        +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem">'
+        +'<span style="font-size:22px">'+s.icon+'</span>'
+        +'<span style="font-family:var(--font-mk);font-size:15px;color:var(--yellow)">'+s.title+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;line-height:1.7;color:var(--text2)">'+s.body+'</div>'
+        +'</div>';
+    }).join('')
+    +'<div style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:12px">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:.75rem">'
+    +'<span style="font-size:22px">🏆</span>'
+    +'<span style="font-family:var(--font-mk);font-size:15px;color:var(--yellow)">'+(isEn?'Score Table':'得点表')+'</span>'
+    +'</div>'+pts_table+'</div>'
+    +'</div>';
+}
+
+function switchTab(tab){
+  var tabs=['session','courses','matches','ranking','chart','tier','help'];
+  tabs.forEach(function(tabName){document.getElementById('tab-'+tabName).style.display=tabName===tab?'':'none';});
+  document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('on',tabs[i]===tab);});
+  if(tab==='matches')renderMatches();
+  if(tab==='ranking')renderRanking();
+  if(tab==='chart')renderChart();
+  if(tab==='tier')renderTierAnalysis();
+  if(tab==='help')renderHelp();
+}
+function closeM(id){document.getElementById(id).style.display='none';}
+function closeMBg(id,e){if(e.target===document.getElementById(id))closeM(id);}
+function exportData(){
+  var data={courseRecords:courseRecords,matchHistory:matchHistory,customRoads:customRoads,courseImages:courseImages,chars:chars,karts:karts,charImages:charImages,kartImages:kartImages,topN:topN,exportedAt:new Date().toISOString()};
+  var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mkw_data_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var data=JSON.parse(e.target.result);
+      if(data.courseRecords)courseRecords=Object.assign({},courseRecords,data.courseRecords);
+      if(data.matchHistory)matchHistory=data.matchHistory;
+      if(data.customRoads){customRoads=data.customRoads;customRoads.forEach(function(r){if(!courseRecords[r.id])courseRecords[r.id]=[];});}
+      if(data.chars)chars=data.chars;
+      if(data.karts)karts=data.karts;
+      if(data.charImages)charImages=data.charImages;
+      if(data.kartImages)kartImages=data.kartImages;
+      if(data.courseImages)courseImages=data.courseImages;
+      if(data.topN)topN=data.topN;
+      selChar=chars.length>0?chars[0].id:null;
+      selKart=karts.length>0?karts[0].id:null;
+      selTier=null;selCourseId=null;selRank=null;
+      session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
+      autoSave();
+      renderMetrics();renderSession();renderCourseGrid();
+      alert(lang==='en'?'Data imported!':'データを読み込みました！');
+    }catch(err){alert(lang==='en'?'Import failed.':'読み込みに失敗しました。');}
+  };
+  reader.readAsText(file);input.value='';
+}
+// キャラ・マシンのデフォルト画像パス取得
+function charImgPath(item){
+  if(!item)return null;
+  return 'images/'+item.name+'.png';
+}
+function kartImgPath(item){
+  if(!item)return null;
+  // パタテンテン(kart)のみ専用パス
+  if(item.id==='patatenten_kart')return 'images/パタテンテン(kart).png';
+  return 'images/'+item.name+'.png';
+}
+
+// ===== renderSetupPanel =====
+function renderSetupPanel(){
+  var ch=chars.find(function(c){return c.id===selChar;})||chars[0];
+  var kt=karts.find(function(k){return k.id===selKart;})||karts[0];
+  function chImg(item,imgs,isKart){
+    var src=imgs[item.id]||(isKart?kartImgPath(item):charImgPath(item));
+    return src?('<img class="setup-img" src="'+src+'" alt="'+item.name+'">'):'<div class="setup-img-ph">'+item.emoji+'</div>';
+  }
+  return '<div class="setup-panel">'
+    +'<div class="setup-row">'
+    +'<div class="setup-item"><div class="setup-label">'+t('char_label')+'</div>'
+    +'<div class="setup-card" onclick="openSetupModal(\'char\')">'
+    +chImg(ch,charImages,false)
+    +'<div><div class="setup-name">'+chrN(ch)+'</div><div class="setup-hint">'+(lang==="en"?'Tap to change':'タップして変更')+'</div></div>'
+    +'</div></div>'
+    +'<div class="setup-item"><div class="setup-label">'+t('kart_label')+'</div>'
+    +'<div class="setup-card" onclick="openSetupModal(\'kart\')">'
+    +chImg(kt,kartImages,true)
+    +'<div><div class="setup-name">'+ktN(kt)+'</div><div class="setup-hint">'+(lang==="en"?'Tap to change':'タップして変更')+'</div></div>'
+    +'</div></div>'
+    +'</div>'
+    +'<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+    +'<span style="font-size:11px;color:var(--text3)">'+t('top_n_label')+'</span>'
+    +'<span style="font-size:12px;font-weight:700;color:var(--yellow)">'+topN+t('top_n_unit')+'</span>'
+    +'<button class="reset-btn" style="font-size:10px;padding:4px 10px;border-color:var(--border2);color:var(--text2)" onclick="openTopNModal()">'+t('top_n_btn')+'</button>'
+    +'</div>'
+    +'</div>';
+}
+
+// ===== Setup Modal =====
+function openSetupModal(mode){
+  setupModalMode=mode;
+  var isChar=mode==='char';
+  var list=isChar?chars:karts;
+  var imgs=isChar?charImages:kartImages;
+  var sel=isChar?selChar:selKart;
+  document.getElementById('setup-modal-title').textContent=isChar?(lang==='en'?'Select Character':'キャラクターを選択'):(lang==='en'?'Select Kart':'カートを選択');
+  document.getElementById('setup-modal-note').textContent=isChar?(lang==='en'?'Choose your character.':'使用するキャラクターを選んでください。'):(lang==='en'?'Choose your kart.':'使用するカートを選んでください。');
+  var grid=list.map(function(item){
+    var img=imgs[item.id]||(isChar?charImgPath(item):kartImgPath(item));
+    var imgHtml=img?('<img class="setup-opt-img" src="'+img+'" alt="'+item.name+'">'):'<div class="setup-opt-img-ph">'+item.emoji+'</div>';
+    return '<div class="setup-opt'+(item.id===sel?' opt-sel':'')+'" onclick="selectSetupItem(\''+item.id+'\')">'
+      +imgHtml
+      +'<div class="setup-opt-name">'+(lang=='en'&&item.nameEn?item.nameEn:item.name)+'</div>'
+      +'<button class="setup-edit-btn" onclick="event.stopPropagation();openSetupImgModal(\''+mode+'\',\''+item.id+'\')">'+(lang==="en"?'Image':'画像')+'</button>'
+      +'</div>';
+  }).join('');
+  document.getElementById('setup-modal-grid').innerHTML=grid;
+  document.getElementById('modal-setup').style.display='flex';
+}
+function selectSetupItem(id){
+  var isChar=setupModalMode==='char';
+  if(isChar)selChar=id;else selKart=id;
+  closeM('modal-setup');
+  renderSession();
+}
+function openAddSetupItem(){
+  var isChar=setupModalMode==='char';
+  document.getElementById('setup-add-title').textContent=isChar?(lang==='en'?'Add Character':'キャラクターを追加'):(lang==='en'?'Add Kart':'カートを追加');
+  document.getElementById('setup-add-name').value='';
+  document.getElementById('setup-add-emoji').value='';
+  document.getElementById('setup-add-imgurl').value='';
+  document.getElementById('setup-add-imgfile').value='';
+  document.getElementById('setup-add-preview').style.display='none';
+  document.getElementById('modal-setup-add').style.display='flex';
+}
+var _setupAddImgData=null;
+function _bindSetupAddImgfile(){document.getElementById('setup-add-imgfile').addEventListener('change',function(){
+  var file=this.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){_setupAddImgData=e.target.result;var p=document.getElementById('setup-add-preview');p.src=_setupAddImgData;p.style.display='block';};
+  r.readAsDataURL(file);
+});}
+function _bindSetupAddImgurl(){document.getElementById('setup-add-imgurl').addEventListener('input',function(){
+  if(this.value){var p=document.getElementById('setup-add-preview');p.src=this.value;p.style.display='block';}else document.getElementById('setup-add-preview').style.display='none';
+  _setupAddImgData=null;
+});}
+function saveSetupItem(){
+  var name=document.getElementById('setup-add-name').value.trim();
+  if(!name){alert('名前を入力してください');return;}
+  var emoji=document.getElementById('setup-add-emoji').value.trim()||'🏎️';
+  var id=(setupModalMode==='char'?'char_':'kart_')+Date.now();
+  var imgUrl=document.getElementById('setup-add-imgurl').value.trim();
+  var imgData=_setupAddImgData||imgUrl||null;
+  var isChar=setupModalMode==='char';
+  if(isChar){chars.push({id:id,name:name,emoji:emoji});if(imgData)charImages[id]=imgData;}
+  else{karts.push({id:id,name:name,emoji:emoji});if(imgData)kartImages[id]=imgData;}
+  closeM('modal-setup-add');
+  openSetupModal(setupModalMode);
+  autoSave();
+}
+var _setupImgMode=null,_setupImgId=null,_setupImgData=null;
+function openSetupImgModal(mode,id){
+  _setupImgMode=mode;_setupImgId=id;_setupImgData=null;
+  var isChar=mode==='char';
+  var item=(isChar?chars:karts).find(function(x){return x.id===id;});
+  var imgs=isChar?charImages:kartImages;
+  document.getElementById('img-setup-title').textContent=(item?(lang==='en'?item.nameEn||item.name:item.name):'')+(lang==='en'?' — Change Image':'の画像を変更');
+  document.getElementById('img-setup-url').value=imgs[id]&&!imgs[id].startsWith('data:')?imgs[id]:'';
+  document.getElementById('img-setup-file').value='';
+  var p=document.getElementById('img-setup-prev');
+  if(imgs[id]){p.src=imgs[id];p.style.display='block';}else p.style.display='none';
+  document.getElementById('modal-img-setup').style.display='flex';
+}
+function _bindImgSetupUrl(){document.getElementById('img-setup-url').addEventListener('input',function(){
+  if(this.value){var p=document.getElementById('img-setup-prev');p.src=this.value;p.style.display='block';}else document.getElementById('img-setup-prev').style.display='none';
+  _setupImgData=null;
+});}
+function _bindImgSetupFile(){document.getElementById('img-setup-file').addEventListener('change',function(){
+  var file=this.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(e){_setupImgData=e.target.result;var p=document.getElementById('img-setup-prev');p.src=_setupImgData;p.style.display='block';};
+  r.readAsDataURL(file);
+});}
+function saveSetupImg(){
+  var isChar=_setupImgMode==='char';
+  var imgs=isChar?charImages:kartImages;
+  if(_setupImgData)imgs[_setupImgId]=_setupImgData;
+  else{var url=document.getElementById('img-setup-url').value.trim();if(url)imgs[_setupImgId]=url;}
+  closeM('modal-img-setup');
+  openSetupModal(_setupImgMode);
+  autoSave();
+}
+function clearSetupImg(){
+  var isChar=_setupImgMode==='char';
+  if(isChar)delete charImages[_setupImgId];else delete kartImages[_setupImgId];
+  closeM('modal-img-setup');
+  openSetupModal(_setupImgMode);
+  autoSave();
+}
+
+// ===== topN Modal =====
+function openTopNModal(){
+  var val=prompt(lang==='en'?('Win cutoff rank (1–24)\nCurrent: '+topN+'th+'):('入賞基準順位を入力してください（1〜24）\n現在: '+topN+'位以上'));
+  if(val===null)return;
+  var n=parseInt(val);
+  if(isNaN(n)||n<1||n>24){alert(lang==='en'?'Enter a number between 1 and 24.':'1〜24の数値を入力してください');return;}
+  topN=n;
+  renderSession();renderMetrics();autoSave();
+}
+
+// ===== Edit Match Modal =====
+function openEditMatch(id){
+  editMatchId=id;
+  var m=matchHistory.find(function(x){return x.id===id;});
+  if(!m)return;
+  // Tier picker
+  var tierBtns=TIERS.map(function(tier){
+    var sel=m.tier===tier?' t-sel':'';
+    return '<button class="tier-btn tier-'+tier+sel+'" onclick="setEditTier(\''+tier+'\')">'+tier+'</button>';
+  }).join('');
+  document.getElementById('edit-tier-picker').innerHTML=tierBtns;
+  document.getElementById('edit-memo').value=m.memo||'';
+  document.getElementById('edit-date').value=m.date||'';
+  // キャラ・マシン select populate
+  var charOpts=chars.map(function(c){return '<option value="'+c.id+'"'+(c.id===m.charId?' selected':'')+'>'+c.emoji+' '+chrN(c)+'</option>';}).join('');
+  document.getElementById('edit-char').innerHTML=charOpts;
+  var kartOpts=karts.map(function(k){return '<option value="'+k.id+'"'+(k.id===m.kartId?' selected':'')+'>'+k.emoji+' '+ktN(k)+'</option>';}).join('');
+  document.getElementById('edit-kart').innerHTML=kartOpts;
+  // race list
+  var raceList=m.races.map(function(r,i){
+    var c=getAllCourses().find(function(x){return x.id===r.courseId;});
+    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="font-size:11px;color:var(--text3);width:22px;text-align:center">'+(i+1)+'</span>'
+      +'<span style="flex:1;font-size:12px">'+(c?c.emoji+' '+c.name:'不明')+'</span>'
+      +'<select onchange="updateEditRace('+i+',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);width:72px">'
+      +Array.from({length:24},function(_,ri){return '<option value="'+(ri+1)+'"'+(r.rank===ri+1?' selected':'')+'>'+(ri+1)+'位</option>';}).join('')
+      +'</select>'
+      +'</div>';
+  }).join('');
+  document.getElementById('edit-race-list').innerHTML=raceList;
+  document.getElementById('modal-edit').style.display='flex';
+}
+function setEditTier(t){
+  var m=matchHistory.find(function(x){return x.id===editMatchId;});
+  if(m)m.tier=t;
+  var btns=document.querySelectorAll('#edit-tier-picker .tier-btn');
+  btns.forEach(function(b){b.classList.toggle('t-sel',b.textContent===t);});
+}
+function updateEditRace(idx,val){
+  var m=matchHistory.find(function(x){return x.id===editMatchId;});
+  if(m&&m.races[idx])m.races[idx].rank=parseInt(val);
+}
+function saveEditMatch(){
+  var m=matchHistory.find(function(x){return x.id===editMatchId;});
+  if(!m)return;
+  m.memo=document.getElementById('edit-memo').value;
+  m.date=document.getElementById('edit-date').value;
+  m.charId=document.getElementById('edit-char').value;
+  m.kartId=document.getElementById('edit-kart').value;
+  m.totalPts=m.races.reduce(function(s,r){return s+pts(r.rank);},0);
+  rebuildCourseRecords();
+  closeM('modal-edit');
+  renderMatches();renderMetrics();renderCourseGrid();autoSave();
+}
+function deleteMatch(){
+  if(!confirm(lang==='en'?'Delete this match? This cannot be undone.':'この試合を削除しますか？'))return;
+  matchHistory=matchHistory.filter(function(m){return m.id!==editMatchId;});
+  rebuildCourseRecords();
+  closeM('modal-edit');
+  renderMatches();renderMetrics();autoSave();
+}
+function rebuildCourseRecords(){
+  // Reset all records
+  var emptyRecs={};
+  BASE_COURSES.forEach(function(c){emptyRecs[c.id]=[];});
+  customRoads.forEach(function(r){emptyRecs[r.id]=[];});
+  matchHistory.slice().reverse().forEach(function(m){
+    m.races.forEach(function(r){
+      if(!emptyRecs[r.courseId])emptyRecs[r.courseId]=[];
+      emptyRecs[r.courseId].push({rank:r.rank,date:m.date,memo:(lang==='en'?'Match #':'試合 #')+(matchHistory.indexOf(m)+1)});
+    });
+  });
+  courseRecords=emptyRecs;
+}
+
+// ===== Tier Analysis =====
+function renderTierAnalysis(){
+  var el=document.getElementById('tier-analysis');
+  // Group matches by tier
+  var tierData={};
+  TIERS.forEach(function(tier){tierData[tier]=[];});
+  matchHistory.forEach(function(m){
+    if(m.tier&&tierData[m.tier]){
+      tierData[m.tier].push(m);
+    }
+  });
+  var hasAny=TIERS.some(function(tier){return tierData[tier].length>0;});
+  if(!hasAny){
+    el.innerHTML=(lang==='en'?'<div class="empty" style="padding:3rem">No matches recorded yet.<br>Complete a match to see Tier analysis.</div>':'<div class="empty" style="padding:3rem">まだ試合の記録がありません。<br>試合を完了するとTier別分析が表示されます。</div>');
+    return;
+  }
+  // Summary grid
+  var summaryCards=TIERS.filter(function(tier){return tierData[tier].length>0;}).map(function(tier){
+    var matches=tierData[tier];
+    var avgPts=(matches.reduce(function(s,m){return s+m.totalPts;},0)/matches.length).toFixed(1);
+    var allRaces=matches.flatMap(function(m){return m.races;});
+    var avgRank=allRaces.length?(allRaces.reduce(function(s,r){return s+r.rank;},0)/allRaces.length).toFixed(1):'--';
+    var topRate=allRaces.length?Math.round(allRaces.filter(function(r){return r.rank<=topN;}).length/allRaces.length*100):0;
+    return '<div class="tier-summary-card">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">'
+      +'<span class="tier-badge tier-'+tier+'">'+tier+'</span>'
+      +'<span style="font-size:11px;color:var(--text3)">'+matches.length+(lang==="en"?' matches':'試合')+'</span>'
+      +'</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-bottom:4px">'+(lang==='en'?'Avg Score':'平均得点')+' <span style="font-size:16px;font-weight:800;font-family:var(--font-mk);color:var(--text)">'+avgPts+'</span> pt</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-bottom:4px">'+(lang==='en'?'Avg Rank':'平均順位')+' <span style="font-size:14px;font-weight:800;font-family:var(--font-mk);color:var(--text)">'+avgRank+'</span> 位</div>'
+      +'<div style="font-size:12px;color:var(--text2)">'+topN+'位以上 <span style="font-size:14px;font-weight:800;font-family:var(--font-mk);color:var(--yellow)">'+topRate+'</span> %</div>'
+      +'</div>';
+  }).join('');
+
+  // Detail rows
+  var detailRows=TIERS.filter(function(tier){return tierData[tier].length>0;}).map(function(tier){
+    var matches=tierData[tier];
+    var allRaces=matches.flatMap(function(m){return m.races;});
+    var avgPts=(matches.reduce(function(s,m){return s+m.totalPts;},0)/matches.length).toFixed(1);
+    var maxPts=Math.max.apply(null,matches.map(function(m){return m.totalPts;}));
+    var minPts=Math.min.apply(null,matches.map(function(m){return m.totalPts;}));
+    var avgRank=allRaces.length?(allRaces.reduce(function(s,r){return s+r.rank;},0)/allRaces.length).toFixed(1):'--';
+    var topRate=allRaces.length?Math.round(allRaces.filter(function(r){return r.rank<=topN;}).length/allRaces.length*100):0;
+    // Sparkline: last 8 matches by pts
+    var recentPts=matches.slice(0,8).reverse().map(function(m){return m.totalPts;});
+    var spMax=Math.max.apply(null,recentPts.concat([1]));
+    var spMin=Math.min.apply(null,recentPts);
+    var spRange=spMax-spMin||1;
+    var spW=120,spH=32;
+    var pts_arr=recentPts;
+    var spPts=pts_arr.map(function(p,i){
+      var x=pts_arr.length===1?spW/2:(i/(pts_arr.length-1))*spW;
+      var y=spH-2-((p-spMin)/spRange)*(spH-6);
+      return x+','+y;
+    }).join(' ');
+    var sparkSvg='<svg width="'+spW+'" height="'+spH+'" viewBox="0 0 '+spW+' '+spH+'" style="vertical-align:middle">'
+      +'<polyline fill="none" stroke="var(--yellow)" stroke-width="2" points="'+spPts+'"/>'
+      +'</svg>';
+    // Tier color for label
+    var tierColors={'X':'#ff4ecd','S':'#ff6b35','A':'#F5C518','B':'#5dca8a','BC':'#4ab89a','C':'#378ADD','CD':'#5a7acc','D':'#8a7acc','DE':'#aa6aaa','E':'#cc6688','EF':'#aaaaaa','F':'#888','SQ':'#00e5ff'};
+    var tc=tierColors[tier]||'var(--text2)';
+    return '<div class="tier-row">'
+      +'<div class="tier-row-label" style="background:'+tc+'22;color:'+tc+'">'+tier+'</div>'
+      +'<div class="tier-row-body">'
+      +'<div class="tier-row-stats">'
+      +'<div class="tier-row-stat">'+(lang=='en'?'Matches':'試合数')+'<span>'+matches.length+'</span></div>'
+      +'<div class="tier-row-stat">'+(lang=='en'?'Avg Score':'平均得点')+'<span>'+avgPts+' pt</span></div>'
+      +'<div class="tier-row-stat">'+(lang==='en'?'Avg Rank':'平均順位')+'<span>'+avgRank+(lang==='en'?'':'位')+'</span></div>'
+      +'<div class="tier-row-stat">'+topN+(lang=='en'?'+':'位以上')+(lang=='en'?' Rate':'率')+'<span>'+topRate+'%</span></div>'
+      +'<div class="tier-row-stat">'+(lang=='en'?'Hi/Lo':'最高/最低')+'<span>'+maxPts+'/'+minPts+' pt</span></div>'
+      +'</div>'
+      +(pts_arr.length>1?'<div style="display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:var(--text3)">得点推移</span>'+sparkSvg+'</div>':'')
+      +'<div class="tier-mini-bar-wrap"><span class="tier-mini-label">'+(lang==="en"?'Avg Score':'平均得点')+'</span><div class="tier-mini-track"><div class="tier-mini-fill" style="width:'+Math.round(parseFloat(avgPts)/100*100)+'%;background:'+tc+'"></div></div><span class="tier-mini-val">'+avgPts+'</span></div>'
+      +'<div class="tier-mini-bar-wrap"><span class="tier-mini-label">'+(lang==="en"?'Win Rate':'入賞率')+'</span><div class="tier-mini-track"><div class="tier-mini-fill" style="width:'+topRate+'%;background:var(--green)"></div></div><span class="tier-mini-val">'+topRate+'%</span></div>'
+      +'</div></div>';
+  }).join('');
+
+  el.innerHTML=''
+    +'<div class="tier-section-title">'+t('tier_summary')+'</div>'
+    +'<div class="tier-summary-grid">'+summaryCards+'</div>'
+    +'<div class="tier-section-title">'+t('tier_detail')+'</div>'
+    +detailRows;
+}
+
+// ===== Event delegation & Init (DOMContentLoaded保証) =====
+document.addEventListener('DOMContentLoaded', function(){
+
+  // モーダル内のファイル・URL入力バインド
+  _bindImgUrl();
+  _bindImgFile();
+  _bindSetupAddImgfile();
+  _bindSetupAddImgurl();
+  _bindImgSetupUrl();
+  _bindImgSetupFile();
+
+  // コースピッカー（試合入力タブ）
+  document.getElementById('session-area').addEventListener('click',function(e){
+    var cpCard=e.target.closest('[data-pick-course]');
+    if(cpCard){pickCourse(cpCard.getAttribute('data-pick-course'));return;}
+  });
+
+  // コース戦績アコーディオン
+  document.getElementById('courses-accordion').addEventListener('click',function(e){
+    var imgBtn=e.target.closest('.img-btn');
+    if(imgBtn){openImgModal(imgBtn.getAttribute('data-img-id'));return;}
+    var card=e.target.closest('.ccard');
+    if(card){selectCourse(card.getAttribute('data-course-id'));return;}
+  });
+
+  // 初期描画
+  autoLoad();
+  applyI18n();
+  renderMetrics();
+  renderSession();
+  renderCourseGrid();
+});
+
+// ===== Init =====
+function autoSave(){
+  try{
+    localStorage.setItem('mkw_tracker',JSON.stringify({
+      courseRecords:courseRecords,
+      matchHistory:matchHistory,
+      customRoads:customRoads,
+      courseImages:courseImages,
+      chars:chars,
+      karts:karts,
+      charImages:charImages,
+      kartImages:kartImages,
+      topN:topN,
+      session:session,
+      selChar:selChar,
+      selKart:selKart,
+      selTier:selTier,
+      selCourseId:selCourseId,
+      selRank:selRank,
+      roadMode:roadMode,
+      roadFrom:roadFrom,
+      roadTo:roadTo,
+      lang:lang
+    }));
+  }catch(e){}
+}
+function autoLoad(){
+  try{
+    var raw=localStorage.getItem('mkw_tracker');if(!raw)return;
+    var data=JSON.parse(raw);
+    if(data.courseRecords)courseRecords=Object.assign({},courseRecords,data.courseRecords);
+    if(data.matchHistory)matchHistory=data.matchHistory;
+    if(data.customRoads){customRoads=data.customRoads;customRoads.forEach(function(r){if(!courseRecords[r.id])courseRecords[r.id]=[];});}
+    if(data.chars)chars=data.chars;
+    if(data.karts)karts=data.karts;
+    if(data.charImages)charImages=data.charImages;
+    if(data.kartImages)kartImages=data.kartImages;
+    if(data.courseImages)courseImages=data.courseImages;
+    if(data.topN)topN=data.topN;
+    if(data.session)session=data.session;
+    if(data.selChar)selChar=data.selChar;
+    else if(chars.length>0)selChar=chars[0].id;
+    if(data.selKart)selKart=data.selKart;
+    else if(karts.length>0)selKart=karts[0].id;
+    if(data.selTier)selTier=data.selTier;
+    if(data.selCourseId)selCourseId=data.selCourseId;
+    if(data.selRank)selRank=data.selRank;
+    if(data.roadMode)roadMode=data.roadMode;
+    // 旧ID マイグレーション
+    [['crown_city2','crown_city1'],['peach_stadium2','peach_stadium1']].forEach(function(pair){
+      if(courseRecords[pair[0]]){
+        if(!courseRecords[pair[1]])courseRecords[pair[1]]=[];
+        courseRecords[pair[1]]=courseRecords[pair[1]].concat(courseRecords[pair[0]]);
+        delete courseRecords[pair[0]];
+      }
+      if(data.selCourseId===pair[0])selCourseId=pair[1];
+    });
+    if(data.roadFrom)roadFrom=data.roadFrom;
+    if(data.roadTo)roadTo=data.roadTo;
+    if(data.lang){lang=data.lang;document.getElementById('lang-toggle').textContent=lang==='ja'?'EN':'JA';}
+  }catch(e){}
+}
+
+</script>
+</body>
+</html>
