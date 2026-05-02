@@ -972,10 +972,8 @@ function commitRoad(){
     var fromShort=cShort(fromC);
     var toShort=cShort(toC);
     var autoName=fromShort+'→'+toShort;
-    var promptMsg=lang==='en'?'Intermission name (optional):':'道の名前（省略可）:';
-    var name=prompt(promptMsg,autoName)||autoName;
     var id='road_'+roadFrom+'_'+roadTo+'_'+Date.now();
-    roadObj={id:id,name:name,nameEn:name,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
+    roadObj={id:id,name:autoName,nameEn:autoName,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
     customRoads.push(roadObj);
     courseRecords[id]=[];
     renderCourseGrid();
@@ -1148,10 +1146,29 @@ function buildDetailHTML(id){
       +'<button class="del-btn" data-del-rec="'+(recs.length-1-i)+'" data-del-course="'+id+'">✕</button>'
       +'</div>';
   }).join(''):('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
+  var abbr=COURSE_ABBR[id];
+  var curShortJa=abbr?abbr.shortJa:(c.name?c.name.slice(0,4):'');
   var roadInfo=c.isRoad
-    ?('<div style="font-size:11px;color:var(--text2);margin-bottom:.75rem;display:flex;gap:6px;align-items:center;background:var(--bg2);padding:6px 10px;border-radius:8px;border:1px solid var(--border)">'
+    ?('<div style="margin-bottom:.75rem;background:var(--bg2);padding:8px 10px;border-radius:8px;border:1px solid var(--border)">'
+      // 始点→終点ライン
+      +'<div style="font-size:11px;color:var(--text2);display:flex;gap:6px;align-items:center;margin-bottom:8px">'
       +'<span style="font-weight:700">'+c.fromName+'</span><span>→</span><span style="font-weight:700">'+c.toName+'</span>'
       +'<button class="del-btn" data-del-road="'+id+'" style="margin-left:auto">'+(lang==="en"?'Delete':'道を削除')+'</button>'
+      +'</div>'
+      // 道の名前編集
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text3);width:56px;flex-shrink:0">'+(lang==='en'?'Name':'名前')+'</span>'
+      +'<input id="road-name-input-'+id+'" value="'+cN(c).replace(/"/g,'&quot;')+'" style="flex:1;font-size:12px;padding:4px 8px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:var(--font);outline:none" oninput="previewRoadEdit(\''+id+'\')">'
+      +'<button class="save-btn" style="font-size:10px;padding:4px 10px" onclick="saveRoadName(\''+id+'\')">'+(lang==='en'?'Save':'保存')+'</button>'
+      +'</div>'
+      +'</div>')
+    :'';
+  // 通常コースの略称編集
+  var abbrEditHtml=(!c.isRoad&&abbr)
+    ?('<div style="display:flex;align-items:center;gap:6px;margin-bottom:.75rem;background:var(--bg2);padding:8px 10px;border-radius:8px;border:1px solid var(--border)">'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text3);width:56px;flex-shrink:0">'+(lang==='en'?'Short':'略称')+'</span>'
+      +'<input id="abbr-input-'+id+'" value="'+curShortJa.replace(/"/g,'&quot;')+'" maxlength="6" style="flex:1;font-size:12px;padding:4px 8px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:var(--font);outline:none">'
+      +'<button class="save-btn" style="font-size:10px;padding:4px 10px" onclick="saveShortJa(\''+id+'\')">'+(lang==='en'?'Save':'保存')+'</button>'
       +'</div>')
     :'';
   var statsHtml='';
@@ -1173,6 +1190,7 @@ function buildDetailHTML(id){
     +'<div><div class="d-name">'+cN(c)+'</div><div class="d-cup">'+(lang=='en'&&c.cupEn?c.cupEn:c.cup)+'</div></div>'
     +'</div>'
     +roadInfo
+    +abbrEditHtml
     +statsHtml
     +(lang==='en'?'<div class="sec-lbl" style="margin-bottom:8px">Race History</div>':'<div class="sec-lbl" style="margin-bottom:8px">レース履歴</div>')
     +histHtml
@@ -1186,6 +1204,43 @@ function delCourseRec(cid,idx){
   renderMetrics();renderCourseGrid();
   if(prevSel)selectCourse(prevSel);
   autoSave();
+}
+// 道中コース名をリアルタイムプレビュー（パネルヘッダを即時更新）
+function previewRoadEdit(id){
+  var inp=document.getElementById('road-name-input-'+id);
+  if(!inp)return;
+  var val=inp.value.trim();
+  // d-nameだけ即時更新
+  var det=document.getElementById('detail-'+id);
+  if(det){var dn=det.querySelector('.d-name');if(dn)dn.textContent=val||'（名前なし）';}
+}
+// 道中コース名を保存
+function saveRoadName(id){
+  var inp=document.getElementById('road-name-input-'+id);
+  if(!inp)return;
+  var val=inp.value.trim();
+  if(!val)return;
+  var road=customRoads.find(function(r){return r.id===id;});
+  if(!road)return;
+  road.name=val;road.nameEn=val;
+  var prevSel=selCourse;
+  selCourse=null;
+  renderCourseGrid();
+  if(prevSel)selectCourse(prevSel);
+  autoSave();
+}
+// コースの略称（shortJa）を保存
+function saveShortJa(id){
+  var inp=document.getElementById('abbr-input-'+id);
+  if(!inp)return;
+  var val=inp.value.trim();
+  if(!val)return;
+  if(!COURSE_ABBR[id])COURSE_ABBR[id]={shortJa:val,shortEn:val};
+  else COURSE_ABBR[id].shortJa=val;
+  autoSave();
+  // 保存後にフィードバック
+  inp.style.borderColor='var(--green)';
+  setTimeout(function(){inp.style.borderColor='';},1200);
 }
 function renderMatches(){
   if(!matchHistory.length){document.getElementById('match-list').innerHTML=(lang==='en'?'<div class="empty">No matches recorded yet.</div>':'<div class="empty">まだ試合の記録がありません</div>');return;}
@@ -1572,43 +1627,103 @@ function exportSingleMatch(matchId){
   var blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='mkw_match_'+m.date+'_'+m.totalPts+'pt.json';a.click();
 }
+// ── ヘルパー: 試合を1件マージ（重複チェック・courseRecords更新） ──
+function _mergeSingleMatch(m){
+  if(matchHistory.find(function(x){return x.id===m.id;}))return false;
+  matchHistory.push(m);
+  if(m.races){
+    m.races.forEach(function(r){
+      if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];
+      var dup=courseRecords[r.courseId].some(function(rec){return rec.matchId===m.id;});
+      if(!dup){
+        courseRecords[r.courseId].push({rank:r.rank,date:m.date,memo:m.memo||'',matchId:m.id});
+      }
+    });
+  }
+  return true;
+}
+// ── ヘルパー: matchHistory を日付降順にソート ──
+function _sortMatchHistory(){
+  matchHistory.sort(function(a,b){
+    if(b.date<a.date)return -1;
+    if(b.date>a.date)return 1;
+    return b.id-a.id;
+  });
+}
+// ── ヘルパー: 画像データ保護マージ（絵文字で画像パスを上書きしない） ──
+function _safeMergeImages(src,dst){
+  if(!src)return;
+  Object.keys(src).forEach(function(k){
+    var incoming=src[k];
+    var current=dst[k];
+    if(current&&(current.match(/\.(png|avif|jpg|jpeg|webp)$/i)||current.startsWith('data:image'))){
+      if(incoming&&!incoming.startsWith('http')&&!incoming.startsWith('data:')&&incoming.length<=10)return;
+    }
+    dst[k]=incoming;
+  });
+}
 function importData(input){
   var file=input.files[0];if(!file)return;
   var reader=new FileReader();
   reader.onload=function(e){
     try{
       var data=JSON.parse(e.target.result);
-      if(data.courseRecords)courseRecords=Object.assign({},courseRecords,data.courseRecords);
-      if(data.matchHistory)matchHistory=data.matchHistory;
-      if(data.customRoads){customRoads=data.customRoads;customRoads.forEach(function(r){if(!courseRecords[r.id])courseRecords[r.id]=[];});}
+
+      // ── 1試合エクスポートJSON対応 ──
+      if(data.singleMatch&&data.match){
+        var added=_mergeSingleMatch(data.match);
+        _sortMatchHistory();
+        autoSave();
+        renderMetrics();renderSession();renderCourseGrid();
+        alert(added
+          ?(lang==='en'?'Match imported!':'試合を読み込みました！')
+          :(lang==='en'?'Already imported (duplicate).':'この試合は既に記録されています（重複）。'));
+        return;
+      }
+
+      // ── 全データエクスポートJSON対応（非破壊マージ） ──
+      // courseRecords: キー単位でマージ
+      if(data.courseRecords){
+        Object.keys(data.courseRecords).forEach(function(cid){
+          if(!courseRecords[cid])courseRecords[cid]=[];
+          var incoming=data.courseRecords[cid]||[];
+          incoming.forEach(function(rec){
+            var dup;
+            if(rec.matchId){
+              dup=courseRecords[cid].some(function(r){return r.matchId===rec.matchId;});
+            } else {
+              dup=courseRecords[cid].some(function(r){return r.date===rec.date&&r.rank===rec.rank&&r.memo===rec.memo;});
+            }
+            if(!dup)courseRecords[cid].push(rec);
+          });
+        });
+      }
+      // matchHistory: 非破壊マージ
+      if(data.matchHistory){
+        data.matchHistory.forEach(function(m){_mergeSingleMatch(m);});
+      }
+      _sortMatchHistory();
+      // customRoads: 重複しないものを追加
+      if(data.customRoads){
+        data.customRoads.forEach(function(r){
+          if(!customRoads.find(function(x){return x.id===r.id;})){
+            customRoads.push(r);
+            if(!courseRecords[r.id])courseRecords[r.id]=[];
+          }
+        });
+      }
+      // chars / karts は上書き（設定データとして扱う）
       if(data.chars)chars=data.chars;
       if(data.karts)karts=data.karts;
-      // マスタ名称マイグレーション（importData用）
       var _removedKartIds=new Set(['bumble_v']);
       karts=karts.filter(function(k){return !_removedKartIds.has(k.id);});
       DEFAULT_CHARS.forEach(function(dc){var c=chars.find(function(x){return x.id===dc.id;});if(c){c.name=dc.name;c.nameEn=dc.nameEn;}});
       DEFAULT_KARTS.forEach(function(dk){var k=karts.find(function(x){return x.id===dk.id;});if(k){k.name=dk.name;k.nameEn=dk.nameEn;}});
-      if(data.charImages)charImages=data.charImages;
-      if(data.kartImages)kartImages=data.kartImages;
-      // courseImages: 現在の.png/.avif画像を絵文字データで上書きしない
-      if(data.courseImages){
-        var newCourseImgs=data.courseImages;
-        Object.keys(newCourseImgs).forEach(function(k){
-          var incoming=newCourseImgs[k];
-          var current=courseImages[k];
-          // 現在が画像ファイルパス(.png/.avif)なら絵文字1文字データで上書きしない
-          if(current&&(current.match(/\.(png|avif|jpg|jpeg|webp)$/i)||current.startsWith('data:image'))){
-            // 入ってくるデータが絵文字（短い文字列でhttpでもdata:でもない）なら無視
-            if(incoming&&!incoming.startsWith('http')&&!incoming.startsWith('data:')&&incoming.length<=10)return;
-          }
-          courseImages[k]=incoming;
-        });
-      }
+      // 画像: 保護マージ
+      _safeMergeImages(data.charImages,charImages);
+      _safeMergeImages(data.kartImages,kartImages);
+      _safeMergeImages(data.courseImages,courseImages);
       if(data.topN)topN=data.topN;
-      selChar=chars.length>0?chars[0].id:null;
-      selKart=karts.length>0?karts[0].id:null;
-      selTier=null;selCourseId=null;selRank=null;
-      session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
       autoSave();
       renderMetrics();renderSession();renderCourseGrid();
       alert(lang==='en'?'Data imported!':'データを読み込みました！');
@@ -1937,7 +2052,8 @@ function autoSave(){
       roadMode:roadMode,
       roadFrom:roadFrom,
       roadTo:roadTo,
-      lang:lang
+      lang:lang,
+      courseAbbr:COURSE_ABBR
     }));
   }catch(e){}
 }
@@ -1970,6 +2086,14 @@ function autoLoad(){
         var incoming=data.courseImages[k];
         if(incoming&&!incoming.startsWith('http')&&!incoming.startsWith('data:')&&incoming.length<=10)return;
         courseImages[k]=incoming;
+      });
+    }
+    // ユーザーカスタム略称を復元（ベースマスタに上書き）
+    if(data.courseAbbr){
+      Object.keys(data.courseAbbr).forEach(function(k){
+        if(!COURSE_ABBR[k])COURSE_ABBR[k]={};
+        if(data.courseAbbr[k].shortJa)COURSE_ABBR[k].shortJa=data.courseAbbr[k].shortJa;
+        if(data.courseAbbr[k].shortEn)COURSE_ABBR[k].shortEn=data.courseAbbr[k].shortEn;
       });
     }
     if(data.topN)topN=data.topN;
