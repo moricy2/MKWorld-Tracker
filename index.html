@@ -364,9 +364,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 </div>
 <div id="tab-session"><div id="session-area"></div></div>
 <div id="tab-courses" style="display:none">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+  <div style="margin-bottom:12px">
     <div class="sec-lbl">コース戦績</div>
-    <button class="save-btn" onclick="openRoadModal()">＋ 道を追加</button>
   </div>
   <div id="courses-accordion"></div>
 </div>
@@ -1121,7 +1120,8 @@ function finishSession(){
   const totalPts=session.races.reduce((s,r)=>s+pts(r.rank),0);
   const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart,memo:session.memo||'',topN};
   matchHistory.unshift(match);
-  session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,memo:(lang==='en'?'Match #':'試合 #')+matchHistory.length});});
+  var _matchTier = selTier || '';
+  session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,tier:_matchTier});});
   session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
   selCourseId=null;selRank=null;selTier=null;tempRoad=null;
   autoSave();renderMetrics();renderSession();
@@ -1219,7 +1219,7 @@ function buildDetailHTML(id){
     return '<div class="hist-row">'
       +'<div class="h-num">'+(recs.length-i)+'</div>'
       +rankPill(r.rank)
-      +'<div class="h-date">'+r.date+(r.memo?' — '+r.memo:'')+'</div>'
+      +'<div class="h-date">'+r.date+(r.tier?' — <span class="tier-badge tier-'+r.tier+'" style="font-size:9px;padding:1px 6px">'+r.tier+'</span>':'')+'</div>'
       +'<button class="del-btn" data-del-rec="'+(recs.length-1-i)+'" data-del-course="'+id+'">✕</button>'
       +'</div>';
   }).join(''):('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
@@ -1877,7 +1877,7 @@ function rebuildCourseRecords(){
   matchHistory.slice().reverse().forEach(function(m){
     m.races.forEach(function(r){
       if(!emptyRecs[r.courseId])emptyRecs[r.courseId]=[];
-      emptyRecs[r.courseId].push({rank:r.rank,date:m.date,memo:(lang==='en'?'Match #':'試合 #')+(matchHistory.indexOf(m)+1)});
+      emptyRecs[r.courseId].push({rank:r.rank,date:m.date,tier:m.tier||''});
     });
   });
   courseRecords=emptyRecs;
@@ -2117,24 +2117,28 @@ var gd = {
 
 // ── localStorage 永続化 ──
 function gdrive_saveSettings(){
+  var tokenToSave = null;
+  try{ var tk = gapi.client.getToken(); if(tk && tk.access_token) tokenToSave = tk.access_token; }catch(e){}
   localStorage.setItem(GDRIVE_LS_KEY, JSON.stringify({
-    enabled:    gd.enabled,
-    fileId:     gd.fileId,
-    lastSync:   gd.lastSync,
-    tokenExpAt: gd._tokenExpAt,   // 有効期限を保存
-    userEmail:  gd._userEmail,
-    userName:   gd._userName,
+    enabled:     gd.enabled,
+    fileId:      gd.fileId,
+    lastSync:    gd.lastSync,
+    tokenExpAt:  gd._tokenExpAt,   // 有効期限を保存
+    accessToken: tokenToSave,       // アクセストークン本体（リロード後復元用）
+    userEmail:   gd._userEmail,
+    userName:    gd._userName,
   }));
 }
 function gdrive_loadSettings(){
   try{
     var s = JSON.parse(localStorage.getItem(GDRIVE_LS_KEY)||'{}');
-    gd.enabled    = !!s.enabled;
-    gd.fileId     = s.fileId     || null;
-    gd.lastSync   = s.lastSync   || null;
-    gd._tokenExpAt= s.tokenExpAt || null;
-    gd._userEmail = s.userEmail  || '';
-    gd._userName  = s.userName   || '';
+    gd.enabled      = !!s.enabled;
+    gd.fileId       = s.fileId       || null;
+    gd.lastSync     = s.lastSync     || null;
+    gd._tokenExpAt  = s.tokenExpAt   || null;
+    gd._accessToken = s.accessToken  || null;  // リロード後の復元用
+    gd._userEmail   = s.userEmail    || '';
+    gd._userName    = s.userName     || '';
   }catch(e){}
 }
 
@@ -2238,6 +2242,17 @@ function gdrive_silentInit(cb){
     if(existing && existing.access_token && gdrive_tokenStillValid()){
       gd.ready = true; gd.needsReauth = false;
       if(cb) cb(true); return;
+    }
+    // リロード後: localStorage に保存済みトークンがあり期限内なら gapi に復元
+    if(gd._accessToken && gdrive_tokenStillValid()){
+      try{
+        gapi.client.setToken({ access_token: gd._accessToken });
+        gd.ready = true; gd.needsReauth = false;
+        console.info('GDrive: restored token from localStorage');
+        if(cb) cb(true); return;
+      }catch(e){
+        console.warn('GDrive: token restore failed', e);
+      }
     }
     // サイレントで取得を試みる
     gdrive_silentAuth(function(ok, err){
