@@ -2078,348 +2078,477 @@ function autoLoad(){
 }
 
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║              Google Drive Sync Module                           ║
-// ║  ▸ デフォルト OFF。ユーザーが「連携を開始」した時のみ動作。         ║
-// ║  ▸ App Data Folder を使用（他アプリから不可視の専用領域）          ║
+// ║              Google Drive Sync Module  v2                       ║
+// ║  サイレント認証ファースト — リロード後もポップアップなしで再接続    ║
+// ║  仕組み:                                                         ║
+// ║   1. Access Token の有効期限を localStorage に保存               ║
+// ║   2. 起動時: 期限内なら prompt:'' でサイレント取得を試みる         ║
+// ║   3. 失敗/期限切れ時: ステータスバーに「再接続」ボタンだけ出す     ║
+// ║      → ポップアップは必ずユーザー操作起点にする                   ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
-// ── ★ ここを書き換えてください ────────────────────────────────────────
+// ── ★ ここを書き換えてください ──────────────────────────────────────
 const GDRIVE_CLIENT_ID = '620387458524-n77jkaqkl02hnf5ve1obder1h26k9fli.apps.googleusercontent.com';
-const GDRIVE_API_KEY   = 'YOUR_API_KEY';   // Discovery Doc 取得用（省略可）
-// ──────────────────────────────────────────────────────────────────────
+const GDRIVE_API_KEY   = 'YOUR_API_KEY';   // 省略可
+// ────────────────────────────────────────────────────────────────────
 
-const GDRIVE_SCOPE      = 'https://www.googleapis.com/auth/drive.appdata';
-const GDRIVE_FILENAME   = 'mkw_backup.json';
-const GDRIVE_LS_KEY     = 'mkw_gdrive';   // 設定保存先 localStorage キー
-const GDRIVE_DEBOUNCE_MS = 3000;           // autoSave → Drive 書き込みまでの遅延
+const GDRIVE_SCOPE       = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_FILENAME    = 'mkw_backup.json';
+const GDRIVE_LS_KEY      = 'mkw_gdrive';
+const GDRIVE_DEBOUNCE_MS = 3000;
+// Access Token の寿命は Google 発行値 - バッファ (秒)
+const GDRIVE_TOKEN_BUFFER_SEC = 120;
 
 // ── 状態 ──
 var gd = {
-  enabled:    false,   // ユーザーが連携を許可しているか
-  ready:      false,   // gapi 初期化完了 + サインイン済み
-  fileId:     null,    // Drive 上の backup.json の fileId
-  lastSync:   null,    // 最後に同期した ISO 文字列
-  remoteData: null,    // 起動時に取得したリモートデータ（適用前保持）
-  remoteTs:   null,    // リモートの updatedTime
-  busy:       false,   // 書き込み中フラグ
-  gapiLoaded: false,
-  gisLoaded:  false,
-  tokenClient: null,
-  _saveTimer: null,
+  enabled:     false,
+  ready:       false,   // トークン有効 + API 利用可能
+  needsReauth: false,   // サイレント失敗 → 手動再接続が必要
+  fileId:      null,
+  lastSync:    null,
+  remoteData:  null,
+  remoteTs:    null,
+  busy:        false,
+  _saveTimer:  null,
+  _tokenExpAt: null,    // トークン有効期限 (ms epoch)
+  _userEmail:  '',
+  _userName:   '',
 };
 
-// ── 設定を localStorage に永続化 ──
+// ── localStorage 永続化 ──
 function gdrive_saveSettings(){
   localStorage.setItem(GDRIVE_LS_KEY, JSON.stringify({
-    enabled: gd.enabled,
-    fileId:  gd.fileId,
-    lastSync: gd.lastSync,
+    enabled:    gd.enabled,
+    fileId:     gd.fileId,
+    lastSync:   gd.lastSync,
+    tokenExpAt: gd._tokenExpAt,   // 有効期限を保存
+    userEmail:  gd._userEmail,
+    userName:   gd._userName,
   }));
 }
 function gdrive_loadSettings(){
   try{
     var s = JSON.parse(localStorage.getItem(GDRIVE_LS_KEY)||'{}');
-    gd.enabled  = !!s.enabled;
-    gd.fileId   = s.fileId  || null;
-    gd.lastSync = s.lastSync|| null;
+    gd.enabled    = !!s.enabled;
+    gd.fileId     = s.fileId     || null;
+    gd.lastSync   = s.lastSync   || null;
+    gd._tokenExpAt= s.tokenExpAt || null;
+    gd._userEmail = s.userEmail  || '';
+    gd._userName  = s.userName   || '';
   }catch(e){}
+}
+
+// ── トークンが（まだ）有効期限内かどうか ──
+function gdrive_tokenStillValid(){
+  if(!gd._tokenExpAt) return false;
+  return Date.now() < gd._tokenExpAt;
+}
+
+// ── gapi / GIS スクリプトの動的ロード（一度だけ） ──
+function gdrive_loadScripts(cb){
+  var pending = 2;
+  function done(){ if(--pending === 0) cb(); }
+  if(!document.getElementById('_gapi_script')){
+    var s = document.createElement('script');
+    s.id = '_gapi_script';
+    s.src = 'https://apis.google.com/js/api.js';
+    s.onload = function(){
+      gapi.load('client', function(){
+        gapi.client.init({apiKey: GDRIVE_API_KEY, discoveryDocs: []})
+          .then(function(){ done(); }).catch(function(){ done(); });
+      });
+    };
+    document.head.appendChild(s);
+  } else { done(); }
+
+  if(!document.getElementById('_gis_script')){
+    var g = document.createElement('script');
+    g.id = '_gis_script';
+    g.src = 'https://accounts.google.com/gsi/client';
+    g.onload = function(){ done(); };
+    document.head.appendChild(g);
+  } else { done(); }
+}
+
+// ── トークン取得成功後の共通処理 ──
+function gdrive_onTokenReceived(tokenResp){
+  // expires_in は秒単位
+  var expiresIn = parseInt(tokenResp.expires_in || 3599);
+  gd._tokenExpAt = Date.now() + (expiresIn - GDRIVE_TOKEN_BUFFER_SEC) * 1000;
+  gd.ready       = true;
+  gd.needsReauth = false;
+  gdrive_saveSettings();
+  // ユーザー情報を非同期取得（失敗しても無視）
+  fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
+    headers:{ Authorization: 'Bearer ' + gapi.client.getToken().access_token }
+  }).then(function(r){ return r.json(); }).then(function(u){
+    gd._userEmail = u.email || '';
+    gd._userName  = u.name  || '';
+    gdrive_saveSettings();
+    var an = document.getElementById('drive-user-name');
+    if(an) an.textContent = gd._userName || gd._userEmail || '—';
+  }).catch(function(){});
+}
+
+// ── サイレント認証（ポップアップなし） ──
+// Googleセッションが存在すれば prompt:'' で裏側でトークン取得できる
+function gdrive_silentAuth(cb){
+  var tc = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope:     GDRIVE_SCOPE,
+    prompt:    '',   // ← ポップアップを出さない
+    callback:  function(resp){
+      if(resp.error || !resp.access_token){
+        // immediate_failed など → サイレント失敗
+        cb(false, resp.error || 'silent_failed');
+        return;
+      }
+      gdrive_onTokenReceived(resp);
+      cb(true);
+    },
+  });
+  tc.requestAccessToken({ prompt: '' });
+}
+
+// ── 明示的サインイン（ポップアップあり / ユーザー操作起点のみ） ──
+function gdrive_interactiveAuth(cb){
+  var tc = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope:     GDRIVE_SCOPE,
+    callback:  function(resp){
+      if(resp.error || !resp.access_token){
+        cb(false, resp.error);
+        return;
+      }
+      gdrive_onTokenReceived(resp);
+      cb(true);
+    },
+  });
+  // prompt:'select_account' でアカウント選択画面を出す
+  // 2回目以降は '' にするとスムーズだが select_account の方が確実
+  tc.requestAccessToken({ prompt: 'select_account' });
+}
+
+// ── 起動時の自動認証フロー ──
+// サイレントを試みる → 失敗したら needsReauth フラグだけ立てて UI に任せる
+function gdrive_silentInit(cb){
+  gdrive_loadScripts(function(){
+    // すでにメモリ上にトークンがある（同一タブで再初期化された場合）
+    var existing = gapi.client.getToken();
+    if(existing && existing.access_token && gdrive_tokenStillValid()){
+      gd.ready = true; gd.needsReauth = false;
+      if(cb) cb(true); return;
+    }
+    // サイレントで取得を試みる
+    gdrive_silentAuth(function(ok, err){
+      if(ok){
+        if(cb) cb(true);
+      } else {
+        // サイレント失敗 — ポップアップは出さずフラグだけ
+        gd.ready       = false;
+        gd.needsReauth = true;
+        console.info('GDrive silent auth failed:', err, '→ waiting for user interaction');
+        if(cb) cb(false);
+      }
+    });
+  });
+}
+
+// ── 「連携を開始」ボタン / 「再接続」ボタン（ユーザー操作起点） ──
+function gdrive_toggleEnable(){
+  if(gd.enabled){
+    if(!confirm('Google Drive 連携を解除しますか？\nDrive 上のデータは削除されません。')) return;
+    var token = gapi.client ? gapi.client.getToken() : null;
+    if(token) google.accounts.oauth2.revoke(token.access_token, function(){});
+    if(gapi.client) gapi.client.setToken(null);
+    gd.enabled = false; gd.ready = false; gd.needsReauth = false;
+    gd.fileId = null; gd._tokenExpAt = null;
+    gdrive_saveSettings(); gdrive_updateUI(); return;
+  }
+  if(GDRIVE_CLIENT_ID === 'YOUR_CLIENT_ID.apps.googleusercontent.com'){
+    alert('⚠️ Client ID が設定されていません。\nindex.html 内の GDRIVE_CLIENT_ID を書き換えてください。'); return;
+  }
+  gd.enabled = true; gdrive_saveSettings(); gdrive_updateUI();
+  // 初回 or 再接続: インタラクティブ認証
+  gdrive_loadScripts(function(){
+    gdrive_interactiveAuth(function(ok){
+      if(ok){
+        gdrive_updateUI();
+        gdrive_fetchRemote(function(){ gdrive_updateUI(); });
+      } else {
+        alert('Google 認証に失敗しました。再度お試しください。');
+        gd.enabled = false; gd.needsReauth = false;
+        gdrive_saveSettings(); gdrive_updateUI();
+      }
+    });
+  });
+}
+
+// ── 「再接続」ボタン（needsReauth 時にステータスバーに出る） ──
+function gdrive_reconnect(){
+  gdrive_loadScripts(function(){
+    gdrive_interactiveAuth(function(ok){
+      if(ok){
+        gd.needsReauth = false;
+        gdrive_updateUI();
+        gdrive_fetchRemote(function(data, remoteTs){
+          gdrive_checkRemoteNewer(data, remoteTs);
+          gdrive_updateUI();
+        });
+      }
+    });
+  });
+}
+
+// ── サインアウト ──
+function gdrive_signOut(){
+  if(!confirm('Google アカウントとの連携を解除しますか？')) return;
+  var token = gapi.client ? gapi.client.getToken() : null;
+  if(token) google.accounts.oauth2.revoke(token.access_token, function(){});
+  if(gapi.client) gapi.client.setToken(null);
+  gd.ready = false; gd.enabled = false; gd.needsReauth = false;
+  gd.fileId = null; gd._tokenExpAt = null;
+  gdrive_saveSettings(); gdrive_updateUI();
+  var an = document.getElementById('drive-user-name');
+  if(an) an.textContent = '—';
 }
 
 // ── UI 更新 ──
 function gdrive_updateUI(){
-  var bar   = document.getElementById('gdrive-bar');
-  var dot   = document.getElementById('gdrive-dot');
-  var lbl   = document.getElementById('gdrive-label');
-  var sbtn  = document.getElementById('gdrive-sync-btn');
-  var tbtn  = document.getElementById('drive-toggle-btn');
-  var asc   = document.getElementById('drive-auth-section');
-  var ls    = document.getElementById('drive-last-sync');
+  var bar  = document.getElementById('gdrive-bar');
+  var dot  = document.getElementById('gdrive-dot');
+  var lbl  = document.getElementById('gdrive-label');
+  var sbtn = document.getElementById('gdrive-sync-btn');
+  var tbtn = document.getElementById('drive-toggle-btn');
+  var asc  = document.getElementById('drive-auth-section');
+  var ls   = document.getElementById('drive-last-sync');
+  var an   = document.getElementById('drive-user-name');
 
-  // ステータスバー表示制御
   bar.style.display = gd.enabled ? '' : 'none';
 
   if(gd.busy){
-    dot.className='gdrive-dot busy';
-    lbl.innerHTML='<strong>Google Drive</strong> — 同期中…';
-    sbtn.style.display='none';
+    dot.className = 'gdrive-dot busy';
+    lbl.innerHTML = '<strong>Google Drive</strong> — 同期中…';
+    sbtn.style.display = 'none';
   } else if(gd.ready){
-    dot.className='gdrive-dot ok';
-    lbl.innerHTML='<strong>Google Drive</strong> — 同期済み'+(gd.lastSync?' <span style="font-size:10px;color:var(--text3)">'+_fmtTime(gd.lastSync)+'</span>':'');
-    sbtn.style.display='';
+    dot.className = 'gdrive-dot ok';
+    lbl.innerHTML = '<strong>Google Drive</strong> — 同期済み'
+      +(gd.lastSync ? ' <span style="font-size:10px;color:var(--text3)">'+_fmtTime(gd.lastSync)+'</span>' : '');
+    sbtn.style.display = '';
+    sbtn.textContent = '🔄 今すぐ同期';
+    sbtn.onclick = gdrive_manualSync;
+  } else if(gd.needsReauth){
+    // サイレント失敗 → 再接続ボタンをバーに表示（ポップアップなし）
+    dot.className = 'gdrive-dot err';
+    lbl.innerHTML = '<strong>Google Drive</strong> — セッション切れ';
+    sbtn.style.display = '';
+    sbtn.textContent = '🔑 再接続';
+    sbtn.onclick = gdrive_reconnect;
   } else if(gd.enabled){
-    dot.className='gdrive-dot err';
-    lbl.innerHTML='<strong>Google Drive</strong> — 未接続';
-    sbtn.style.display='none';
+    dot.className = 'gdrive-dot err';
+    lbl.innerHTML = '<strong>Google Drive</strong> — 未接続';
+    sbtn.style.display = 'none';
   }
 
-  // 設定セクション
   if(tbtn){
     tbtn.textContent = gd.enabled ? '連携を解除' : '連携を開始';
     tbtn.className   = gd.enabled ? 'gdrive-btn danger' : 'gdrive-btn primary';
   }
   if(asc) asc.style.display = (gd.enabled && gd.ready) ? '' : 'none';
   if(ls && gd.lastSync) ls.textContent = _fmtTime(gd.lastSync);
+  if(an && gd._userName) an.textContent = gd._userName || gd._userEmail || '—';
 }
 function _fmtTime(iso){
-  if(!iso)return'—';
-  var d=new Date(iso);
+  if(!iso) return '—';
+  var d = new Date(iso);
   return d.toLocaleDateString('ja-JP',{month:'numeric',day:'numeric'})
-        +' '+d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+       + ' ' + d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
 }
 
-// ── gapi / GIS の動的ロード ──
-function gdrive_loadScripts(cb){
-  var pending=2;
-  function done(){if(--pending===0)cb();}
-  // gapi
-  if(!document.getElementById('_gapi_script')){
-    var s=document.createElement('script');
-    s.id='_gapi_script';
-    s.src='https://apis.google.com/js/api.js';
-    s.onload=function(){gapi.load('client',function(){
-      gapi.client.init({apiKey:GDRIVE_API_KEY,discoveryDocs:[]}).then(function(){
-        gd.gapiLoaded=true;done();
-      }).catch(function(){gd.gapiLoaded=true;done();});
-    });};
-    document.head.appendChild(s);
-  } else { gd.gapiLoaded=true; done(); }
-  // GIS (Google Identity Services)
-  if(!document.getElementById('_gis_script')){
-    var g=document.createElement('script');
-    g.id='_gis_script';
-    g.src='https://accounts.google.com/gsi/client';
-    g.onload=function(){gd.gisLoaded=true;done();};
-    document.head.appendChild(g);
-  } else { gd.gisLoaded=true; done(); }
-}
-
-// ── OAuth2 トークン取得 ──
-function gdrive_requestToken(cb){
-  gd.tokenClient = google.accounts.oauth2.initTokenClient({
-    client_id: GDRIVE_CLIENT_ID,
-    scope: GDRIVE_SCOPE,
-    callback: function(resp){
-      if(resp.error){ console.error('GDrive token error',resp); cb(false); return; }
-      cb(true);
-    },
-  });
-  gd.tokenClient.requestAccessToken({prompt:'consent'});
-}
-
-// ── サインイン済みかチェック（トークンが有効か） ──
-function gdrive_checkToken(){
+// ── Drive API 呼び出しラッパー（401 時に自動リフレッシュ） ──
+function gdrive_apiCall(method, url, params, body, _retried){
   var token = gapi.client.getToken();
-  return token && token.access_token;
-}
-
-// ── 初期化エントリポイント ──
-function gdrive_init(cb){
-  gdrive_loadScripts(function(){
-    if(gdrive_checkToken()){
-      gd.ready=true; gdrive_updateUI(); if(cb)cb(true); return;
-    }
-    gdrive_requestToken(function(ok){
-      if(ok){ gd.ready=true; gdrive_updateUI(); if(cb)cb(true); }
-      else  { gd.ready=false; gdrive_updateUI(); if(cb)cb(false);}
-    });
-  });
-}
-
-// ── ユーザーが「連携を開始/解除」ボタンを押した ──
-function gdrive_toggleEnable(){
-  if(gd.enabled){
-    if(!confirm('Google Drive 連携を解除しますか？\nDrive 上のデータは削除されません。'))return;
-    gd.enabled=false; gd.ready=false; gd.fileId=null;
-    gdrive_saveSettings(); gdrive_updateUI(); return;
-  }
-  // 連携開始
-  if(GDRIVE_CLIENT_ID==='YOUR_CLIENT_ID.apps.googleusercontent.com'){
-    alert('⚠️ Client ID が設定されていません。\nindex.html 内の GDRIVE_CLIENT_ID を書き換えてください。'); return;
-  }
-  gd.enabled=true; gdrive_saveSettings(); gdrive_updateUI();
-  gdrive_init(function(ok){
-    if(ok){ gdrive_fetchRemote(function(){gdrive_updateUI();}); }
-    else  { alert('Google 認証に失敗しました。'); gd.enabled=false; gdrive_saveSettings(); gdrive_updateUI(); }
-  });
-}
-
-// ── サインアウト ──
-function gdrive_signOut(){
-  if(!confirm('Google アカウントとの連携を解除しますか？'))return;
-  var token=gapi.client.getToken();
-  if(token) google.accounts.oauth2.revoke(token.access_token,function(){});
-  gapi.client.setToken(null);
-  gd.ready=false; gd.enabled=false; gd.fileId=null;
-  gdrive_saveSettings(); gdrive_updateUI();
-  var an=document.getElementById('drive-user-name');
-  if(an)an.textContent='—';
-}
-
-// ── Drive API ラッパー（fetch 直呼び） ──
-function gdrive_apiCall(method, url, params, body){
-  var token=gapi.client.getToken();
-  if(!token)return Promise.reject('not_signed_in');
-  var qs='';
+  if(!token) return Promise.reject('not_signed_in');
+  var qs = '';
   if(params){
-    var p=Object.entries(params).map(function(kv){return encodeURIComponent(kv[0])+'='+encodeURIComponent(kv[1]);}).join('&');
-    if(p) qs='?'+p;
+    var p = Object.entries(params).map(function(kv){
+      return encodeURIComponent(kv[0])+'='+encodeURIComponent(kv[1]);
+    }).join('&');
+    if(p) qs = '?' + p;
   }
-  var opts={method:method, headers:{'Authorization':'Bearer '+token.access_token}};
-  if(body){
-    opts.headers['Content-Type']='application/json';
-    opts.body=JSON.stringify(body);
-  }
+  var opts = { method: method, headers: { 'Authorization': 'Bearer '+token.access_token } };
+  if(body){ opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(body); }
   return fetch(url+qs, opts).then(function(r){
-    if(!r.ok) return r.json().then(function(e){throw e;});
-    if(r.status===204)return null;
+    // 401 → トークン期限切れ → サイレント再取得してリトライ（1回だけ）
+    if(r.status === 401 && !_retried){
+      return new Promise(function(resolve, reject){
+        gdrive_silentAuth(function(ok){
+          if(ok){ resolve(gdrive_apiCall(method, url, params, body, true)); }
+          else  { gd.ready = false; gd.needsReauth = true; gdrive_updateUI(); reject('token_expired'); }
+        });
+      });
+    }
+    if(!r.ok) return r.json().then(function(e){ throw e; });
+    if(r.status === 204) return null;
     return r.json();
   });
 }
 
-// ── ファイル一覧からバックアップを探す ──
+// ── ファイル検索 ──
 function gdrive_findFile(){
   return gdrive_apiCall('GET','https://www.googleapis.com/drive/v3/files',{
-    spaces:'appDataFolder',
-    fields:'files(id,name,modifiedTime)',
-    pageSize:'10',
+    spaces:'appDataFolder', fields:'files(id,name,modifiedTime)', pageSize:'10',
   }).then(function(res){
-    var f=(res.files||[]).find(function(x){return x.name===GDRIVE_FILENAME;});
-    return f||null;
+    return (res.files||[]).find(function(x){ return x.name === GDRIVE_FILENAME; }) || null;
   });
 }
 
 // ── リモートデータ取得 ──
 function gdrive_fetchRemote(cb){
-  if(!gd.ready)return;
+  if(!gd.ready){ if(cb)cb(null); return; }
   gdrive_findFile().then(function(f){
-    if(!f){gd.fileId=null; gdrive_saveSettings(); if(cb)cb(null); return;}
-    gd.fileId=f.id; gd.remoteTs=f.modifiedTime; gdrive_saveSettings();
+    if(!f){ gd.fileId = null; gdrive_saveSettings(); if(cb)cb(null); return; }
+    gd.fileId = f.id; gd.remoteTs = f.modifiedTime; gdrive_saveSettings();
     return gdrive_apiCall('GET','https://www.googleapis.com/drive/v3/files/'+f.id,{alt:'media'})
-      .then(function(data){
-        if(cb)cb(data, f.modifiedTime);
-      });
-  }).catch(function(e){console.error('gdrive fetch',e); if(cb)cb(null);});
+      .then(function(data){ if(cb)cb(data, f.modifiedTime); });
+  }).catch(function(e){ console.error('gdrive fetch', e); if(cb)cb(null); });
 }
 
-// ── Drive へ書き込み ──
+// ── Drive へ書き込み（multipart upload） ──
 function gdrive_writeRemote(payload){
-  if(!gd.ready||gd.busy)return Promise.resolve();
-  gd.busy=true; gdrive_updateUI();
-  var content=JSON.stringify(payload);
-  var boundary='mkw_boundary_'+Date.now();
-  var meta={name:GDRIVE_FILENAME,parents:gd.fileId?undefined:['appDataFolder']};
-  var body='--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'
-    +JSON.stringify(meta)+'\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'
-    +content+'\r\n--'+boundary+'--';
-  var token=gapi.client.getToken();
-  if(!token){gd.busy=false;gdrive_updateUI();return Promise.reject('not_signed_in');}
-  var url=gd.fileId
-    ?'https://www.googleapis.com/upload/drive/v3/files/'+gd.fileId+'?uploadType=multipart'
-    :'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
-  var method=gd.fileId?'PATCH':'POST';
-  return fetch(url,{method:method,headers:{
-    'Authorization':'Bearer '+token.access_token,
-    'Content-Type':'multipart/related; boundary='+boundary,
-  },body:body}).then(function(r){return r.json();}).then(function(res){
-    if(res.id) gd.fileId=res.id;
-    gd.lastSync=new Date().toISOString();
-    gd.busy=false; gdrive_saveSettings(); gdrive_updateUI();
+  if(!gd.ready || gd.busy) return Promise.resolve();
+  gd.busy = true; gdrive_updateUI();
+  var content  = JSON.stringify(payload);
+  var boundary = 'mkw_bdry_' + Date.now();
+  var meta     = { name: GDRIVE_FILENAME, parents: gd.fileId ? undefined : ['appDataFolder'] };
+  var body     = '--'+boundary+'\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n'
+               + JSON.stringify(meta)
+               + '\r\n--'+boundary+'\r\nContent-Type: application/json\r\n\r\n'
+               + content + '\r\n--'+boundary+'--';
+  var token    = gapi.client.getToken();
+  if(!token){ gd.busy = false; gdrive_updateUI(); return Promise.reject('not_signed_in'); }
+  var url    = gd.fileId
+    ? 'https://www.googleapis.com/upload/drive/v3/files/'+gd.fileId+'?uploadType=multipart'
+    : 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart';
+  var method = gd.fileId ? 'PATCH' : 'POST';
+  return fetch(url, {
+    method: method,
+    headers: { 'Authorization': 'Bearer '+token.access_token,
+               'Content-Type': 'multipart/related; boundary='+boundary },
+    body: body,
+  }).then(function(r){
+    if(r.status === 401){
+      // トークン切れ → サイレント取得後リトライ
+      gd.busy = false;
+      return new Promise(function(resolve){
+        gdrive_silentAuth(function(ok){
+          if(ok) resolve(gdrive_writeRemote(payload));
+          else { gd.needsReauth = true; gdrive_updateUI(); resolve(); }
+        });
+      });
+    }
+    return r.json();
+  }).then(function(res){
+    if(res && res.id){ gd.fileId = res.id; }
+    gd.lastSync = new Date().toISOString();
+    gd.busy = false; gdrive_saveSettings(); gdrive_updateUI();
   }).catch(function(e){
-    console.error('gdrive write',e); gd.busy=false; gdrive_updateUI();
+    console.error('gdrive write', e); gd.busy = false; gdrive_updateUI();
   });
 }
 
-// ── 同期するペイロードを組み立て（画像パスは除外してサイズ削減） ──
+// ── ペイロード組み立て（画像パス除外） ──
 function gdrive_buildPayload(){
   return {
-    matchHistory:matchHistory,
-    customRoads:customRoads,
+    matchHistory: matchHistory,
+    customRoads:  customRoads,
     courseRecords:courseRecords,
-    chars:chars,
-    karts:karts,
-    topN:topN,
-    courseMemos:typeof courseMemos!=='undefined'?courseMemos:{},
-    _savedAt:new Date().toISOString(),
+    chars:        chars,
+    karts:        karts,
+    topN:         topN,
+    courseMemos:  typeof courseMemos !== 'undefined' ? courseMemos : {},
+    _savedAt:     new Date().toISOString(),
   };
 }
 
 // ── autoSave から呼ばれるデバウンス付き書き込み ──
 function gdrive_scheduleSave(){
-  if(!gd.enabled||!gd.ready)return;
+  if(!gd.enabled || !gd.ready) return;
   clearTimeout(gd._saveTimer);
-  gd._saveTimer=setTimeout(function(){
+  gd._saveTimer = setTimeout(function(){
     gdrive_writeRemote(gdrive_buildPayload());
   }, GDRIVE_DEBOUNCE_MS);
 }
 
-// ── 手動同期ボタン ──
+// ── 手動同期 ──
 function gdrive_manualSync(){
-  if(!gd.enabled){alert('Google Drive 連携が有効になっていません。');return;}
-  if(!gd.ready){gdrive_init(function(ok){if(ok)gdrive_manualSync();});return;}
+  if(!gd.enabled){ alert('Google Drive 連携が有効になっていません。'); return; }
+  if(!gd.ready)  { gdrive_reconnect(); return; }
   gdrive_writeRemote(gdrive_buildPayload());
 }
 
-// ── 起動時チェック: Drive が新しければバナーを出す ──
+// ── リモートの方が新しいか判定してバナー表示 ──
+function gdrive_checkRemoteNewer(data, remoteTs){
+  if(!data || !remoteTs) return;
+  var localTs = (JSON.parse(localStorage.getItem('mkw_tracker') || '{}'))._savedAt || null;
+  if(!localTs || new Date(remoteTs) > new Date(localTs)){
+    gd.remoteData = data; gd.remoteTs = remoteTs;
+    var banner = document.getElementById('sync-banner');
+    var sub    = document.getElementById('sync-banner-sub');
+    if(banner) banner.classList.add('show');
+    if(sub)    sub.textContent = 'Drive 更新日時: ' + _fmtTime(remoteTs);
+  }
+}
+
+// ── 起動時チェック ──
 function gdrive_checkOnStartup(){
-  if(!gd.enabled)return;
-  gdrive_init(function(ok){
-    if(!ok)return;
+  if(!gd.enabled) return;
+  // サイレント認証を試みる（ポップアップなし）
+  gdrive_silentInit(function(ok){
+    gdrive_updateUI();
+    if(!ok){
+      // needsReauth フラグが立つ → UI に「再接続」ボタンが出る
+      return;
+    }
+    // 認証成功 → Drive チェック
     gdrive_fetchRemote(function(data, remoteTs){
-      if(!data||!remoteTs)return;
-      var localTs=JSON.parse(localStorage.getItem('mkw_tracker')||'{}')._savedAt||null;
-      // リモートの方が新しい場合にバナー表示
-      if(!localTs||(new Date(remoteTs)>new Date(localTs))){
-        gd.remoteData=data; gd.remoteTs=remoteTs;
-        var banner=document.getElementById('sync-banner');
-        var sub=document.getElementById('sync-banner-sub');
-        if(banner){ banner.classList.add('show'); }
-        if(sub)   { sub.textContent='Drive 更新日時: '+_fmtTime(remoteTs); }
-        // ユーザー名表示
-        fetch('https://www.googleapis.com/oauth2/v3/userinfo',{
-          headers:{Authorization:'Bearer '+gapi.client.getToken().access_token}
-        }).then(function(r){return r.json();}).then(function(u){
-          var an=document.getElementById('drive-user-name');
-          if(an)an.textContent=u.name||u.email||'—';
-        }).catch(function(){});
-      }
+      gdrive_checkRemoteNewer(data, remoteTs);
+      gdrive_updateUI();
     });
   });
 }
 
-// ── バナー「適用する」 ──
+// ── バナー操作 ──
 function gdrive_applyRemote(){
-  if(!gd.remoteData){alert('リモートデータがありません。');return;}
-  if(!confirm('Google Drive のデータでローカルを上書きしますか？\n現在のローカルデータは失われます。'))return;
-  var data=gd.remoteData;
-  // importData と同じロジックで適用
-  if(data.courseRecords)courseRecords=Object.assign({},courseRecords,data.courseRecords);
-  if(data.matchHistory)matchHistory=data.matchHistory;
-  if(data.customRoads){customRoads=data.customRoads;customRoads.forEach(function(r){if(!courseRecords[r.id])courseRecords[r.id]=[];});}
-  if(data.chars)chars=data.chars;
-  if(data.karts)karts=data.karts;
-  if(data.topN)topN=data.topN;
-  if(data.courseMemos&&typeof courseMemos!=='undefined')courseMemos=data.courseMemos;
+  if(!gd.remoteData){ alert('リモートデータがありません。'); return; }
+  if(!confirm('Google Drive のデータでローカルを上書きしますか？\n現在のローカルデータは失われます。')) return;
+  var data = gd.remoteData;
+  if(data.courseRecords) courseRecords = Object.assign({}, courseRecords, data.courseRecords);
+  if(data.matchHistory)  matchHistory  = data.matchHistory;
+  if(data.customRoads){  customRoads   = data.customRoads;
+    customRoads.forEach(function(r){ if(!courseRecords[r.id]) courseRecords[r.id]=[]; }); }
+  if(data.chars)    chars    = data.chars;
+  if(data.karts)    karts    = data.karts;
+  if(data.topN)     topN     = data.topN;
+  if(data.courseMemos && typeof courseMemos !== 'undefined') courseMemos = data.courseMemos;
   autoSave();
-  renderMetrics();renderSession();renderCourseGrid();
-  if(typeof renderMatches==='function')renderMatches();
+  renderMetrics(); renderSession(); renderCourseGrid();
+  if(typeof renderMatches === 'function') renderMatches();
   gdrive_dismissBanner();
-  gd.lastSync=new Date().toISOString(); gdrive_saveSettings(); gdrive_updateUI();
+  gd.lastSync = new Date().toISOString(); gdrive_saveSettings(); gdrive_updateUI();
   alert('✅ Google Drive のデータを適用しました。');
 }
-
-// ── バナー「無視」 ──
 function gdrive_dismissBanner(){
-  var banner=document.getElementById('sync-banner');
-  if(banner)banner.classList.remove('show');
-  gd.remoteData=null;
+  var banner = document.getElementById('sync-banner');
+  if(banner) banner.classList.remove('show');
+  gd.remoteData = null;
 }
 
 // ── モジュール起動 ──
 gdrive_loadSettings();
-// DOM準備後に起動チェック（他のinit完了後に実行）
-document.addEventListener('DOMContentLoaded',function(){
-  if(gd.enabled) gdrive_checkOnStartup();
-  gdrive_updateUI();
+document.addEventListener('DOMContentLoaded', function(){
+  gdrive_updateUI();            // まず UI を現在の設定で描画
+  gdrive_checkOnStartup();      // サイレント認証 + Drive チェック
 });
 
 </script>
