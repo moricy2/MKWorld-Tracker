@@ -326,6 +326,15 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .drive-setting-row label{font-size:12px;color:var(--text2);flex:1}
 .drive-info{font-size:11px;color:var(--text3);line-height:1.7;margin-top:8px;padding:8px 10px;background:var(--bg2);border-radius:6px;border:1px solid var(--border)}
 .drive-info code{color:var(--yellow);background:var(--bg3);padding:1px 4px;border-radius:3px;font-size:10px}
+/* 試合履歴タブ内 Drive 同期パネル */
+.drive-sync-panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px}
+.drive-sync-header{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.drive-sync-status{display:flex;align-items:center;gap:6px;flex:1;min-width:0}
+.drive-sync-label{font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drive-sync-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.drive-sync-actions .gdrive-btn{font-size:11px;padding:5px 10px}
+.drive-sync-connect{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3)}
+.drive-sync-connect a{color:#4285f4;font-size:10px}
 </style>
 </head>
 <body>
@@ -370,6 +379,23 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div id="courses-accordion"></div>
 </div>
 <div id="tab-matches" style="display:none">
+  <!-- Drive 同期パネル -->
+  <div class="drive-sync-panel" id="drive-sync-panel">
+    <div class="drive-sync-header">
+      <div class="drive-sync-status">
+        <div class="gdrive-dot" id="gdrive-dot2"></div>
+        <div class="drive-sync-label" id="gdrive-label2">Google Drive</div>
+      </div>
+      <div class="drive-sync-actions" id="drive-sync-actions">
+        <!-- JS で動的生成 -->
+      </div>
+    </div>
+    <!-- アカウント情報（接続済み時のみ） -->
+    <div id="drive-sync-info" style="display:none;font-size:10px;color:var(--text3);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <span id="drive-user-name" style="font-size:11px;color:var(--text2)">—</span>
+      <span>最終同期: <span id="drive-last-sync" style="color:var(--text)">—</span></span>
+    </div>
+  </div>
   <div class="sec-lbl" style="margin-bottom:12px">試合履歴（最新順）</div>
   <div id="match-list"></div>
 </div>
@@ -392,41 +418,13 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div id="tier-analysis"></div>
 </div>
 <div id="tab-help" style="display:none">
-  <!-- Google Drive 設定セクション -->
-  <div id="drive-settings-section" class="drive-setting-card">
-    <div class="drive-setting-title">☁️ Google Drive 同期</div>
-    <div class="drive-setting-row">
-      <label>Google Drive でデータを同期する</label>
-      <button class="gdrive-btn" id="drive-toggle-btn" onclick="gdrive_toggleEnable()">連携を開始</button>
-    </div>
-    <div id="drive-auth-section" style="display:none">
-      <div class="drive-setting-row" style="margin-bottom:6px">
-        <label>アカウント</label>
-        <span id="drive-user-name" style="font-size:12px;color:var(--text2)">—</span>
-        <button class="gdrive-btn danger" onclick="gdrive_signOut()">ログアウト</button>
-      </div>
-      <div class="drive-setting-row">
-        <label>最終同期</label>
-        <span id="drive-last-sync" style="font-size:12px;color:var(--text2)">—</span>
-        <button class="gdrive-btn" onclick="gdrive_manualSync()">🔄 今すぐ同期</button>
-      </div>
-    </div>
-    <div class="drive-info">
-      保存先: Google Drive の <code>アプリデータフォルダ</code>（他のアプリからは見えない専用領域）<br>
-      ファイル: <code>mkw_backup.json</code> — ゲームデータのみ、画像パスは除外<br>
-      同期タイミング: 操作後の自動保存時 / 手動「今すぐ同期」ボタン / アプリ起動時（新しいデータ検出時に通知）<br>
-      <span style="color:var(--yellow)">※ Client ID を設定しないと連携できません。</span>
-      <a href="https://console.cloud.google.com/" target="_blank" style="color:#4285f4;font-size:10px;display:block;margin-top:4px">→ Google Cloud Console でクレデンシャルを取得</a>
-    </div>
-  </div>
   <div id="help-content"></div>
 </div>
-<!-- Google Drive ステータスバー（連携時のみ表示） -->
-<div class="gdrive-bar" id="gdrive-bar" style="display:none">
-  <div class="gdrive-dot" id="gdrive-dot"></div>
-  <div class="gdrive-label" id="gdrive-label">Google Drive</div>
-  <button class="gdrive-btn" id="gdrive-sync-btn" onclick="gdrive_manualSync()" style="display:none">🔄 今すぐ同期</button>
-  <button class="gdrive-btn" onclick="switchTab('help');setTimeout(()=>document.getElementById('drive-settings-section').scrollIntoView({behavior:'smooth'}),100)">⚙️ 設定</button>
+<!-- gdrive-bar: 後方互換性のため残すが非表示 -->
+<div id="gdrive-bar" style="display:none">
+  <div id="gdrive-dot" style="display:none"></div>
+  <div id="gdrive-label" style="display:none"></div>
+  <button id="gdrive-sync-btn" style="display:none"></button>
 </div>
 <div class="save-bar">
   <button class="save-btn" onclick="exportData()">💾 データを保存</button>
@@ -1263,6 +1261,8 @@ function delCourseRec(cid,idx){
   autoSave();
 }
 function renderMatches(){
+  // Drive 同期パネルを最新状態で描画
+  if(typeof gdrive_updateUI === 'function') gdrive_updateUI();
   if(!matchHistory.length){document.getElementById('match-list').innerHTML=(lang==='en'?'<div class="empty">No matches recorded yet.</div>':'<div class="empty">まだ試合の記録がありません</div>');return;}
   var maxPts=Math.max.apply(null,matchHistory.map(function(m){return m.totalPts;}));
   document.getElementById('match-list').innerHTML=matchHistory.map(function(m,i){
@@ -1571,7 +1571,7 @@ function renderHelp(){
 </ol>
 <p>If the same From→To road already exists it will be reused.</p>`},
     {icon:'🗺',title:'Course Records',body:`
-<p>All 28 courses + custom roads sorted A–Z. Course thumbnails are loaded automatically from the <code>images/</code> folder (.avif for courses, .png for characters/karts). Tap a card to expand stats and race history. Tap <strong>＋ Add Road</strong> to manually create a road course.</p>`},
+<p>All 28 courses + custom roads sorted A–Z. Course thumbnails are loaded automatically from the <code>images/</code> folder (.avif for courses, .png for characters/karts). Tap a card to expand stats and race history.</p>`},
     {icon:'📋',title:'Match History',body:`<p>All matches newest-first. Tap a card to expand race details. Tap <strong>💾</strong> on a match to export that single match as a JSON file. Tap <strong>✏️ Edit</strong> to change rank, character, kart, tier, date or note. <strong>Delete Match</strong> is permanent.</p>`},
     {icon:'🏅',title:'Ranking',body:`<p>Sort courses by best average rank, highest win rate, or most attempts.</p>`},
     {icon:'📊',title:'Charts',body:`<p>Bar charts for average rank (lower = better) and win rate by course, including intermission roads.</p>`},
@@ -1601,7 +1601,7 @@ function renderHelp(){
 </ol>
 <p>同じ始点→終点の道が既に存在する場合は既存の道が再利用されます。</p>`},
     {icon:'🗺',title:'コース戦績',body:`
-<p>全28コース＋カスタム道を50音順で表示。コースサムネイルは <code>images/</code> フォルダから自動で読み込まれます（コースは .avif、キャラ・マシンは .png）。カードをタップすると戦績・履歴が展開されます。<strong>＋ 道を追加</strong> から手動で道コースを登録できます。</p>`},
+<p>全28コース＋カスタム道を50音順で表示。コースサムネイルは <code>images/</code> フォルダから自動で読み込まれます（コースは .avif、キャラ・マシンは .png）。カードをタップすると戦績・履歴が展開されます。</p>`},
     {icon:'📋',title:'試合履歴',body:`<p>全試合を新しい順で表示。カードをタップして詳細を展開。各試合カードの<strong>💾</strong>ボタンで、その1試合だけをJSONファイルに書き出せます。<strong>✏️ 訂正</strong>で順位・キャラ・マシン・Tier・日付・メモを変更できます。<strong>試合を削除</strong>は取り消し不可です。</p>`},
     {icon:'🏅',title:'ランキング',body:`<p>コースを「平均順位が良い順」「入賞率が高い順」「試行回数が多い順」で並び替えて表示します。道中コースも含みます。</p>`},
     {icon:'📊',title:'グラフ',body:`<p>コース別の平均順位（低いほど良い）と入賞率（%）を棒グラフで表示します。道中コースも含みます。</p>`},
@@ -1626,7 +1626,7 @@ function switchTab(tab){
   var tabs=['session','courses','matches','ranking','chart','tier','help'];
   tabs.forEach(function(tabName){document.getElementById('tab-'+tabName).style.display=tabName===tab?'':'none';});
   document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('on',tabs[i]===tab);});
-  if(tab==='matches')renderMatches();
+  if(tab==='matches'){ renderMatches(); } // gdrive_updateUI は renderMatches 先頭で呼ぶ
   if(tab==='ranking')renderRanking();
   if(tab==='chart')renderChart();
   if(tab==='tier')renderTierAnalysis();
@@ -2269,15 +2269,16 @@ function gdrive_silentInit(cb){
   });
 }
 
-// ── 「連携を開始」ボタン / 「再接続」ボタン（ユーザー操作起点） ──
+// ── 「連携を開始」ボタン（ユーザー操作起点） ──
 function gdrive_toggleEnable(){
   if(gd.enabled){
+    // 既に連携中 → 解除
     if(!confirm('Google Drive 連携を解除しますか？\nDrive 上のデータは削除されません。')) return;
     var token = gapi.client ? gapi.client.getToken() : null;
     if(token) google.accounts.oauth2.revoke(token.access_token, function(){});
     if(gapi.client) gapi.client.setToken(null);
     gd.enabled = false; gd.ready = false; gd.needsReauth = false;
-    gd.fileId = null; gd._tokenExpAt = null;
+    gd.fileId = null; gd._tokenExpAt = null; gd._accessToken = null;
     gdrive_saveSettings(); gdrive_updateUI(); return;
   }
   if(GDRIVE_CLIENT_ID === 'YOUR_CLIENT_ID.apps.googleusercontent.com'){
@@ -2289,7 +2290,10 @@ function gdrive_toggleEnable(){
     gdrive_interactiveAuth(function(ok){
       if(ok){
         gdrive_updateUI();
-        gdrive_fetchRemote(function(){ gdrive_updateUI(); });
+        gdrive_fetchRemote(function(data, remoteTs){
+          gdrive_checkRemoteNewer(data, remoteTs);
+          gdrive_updateUI();
+        });
       } else {
         alert('Google 認証に失敗しました。再度お試しください。');
         gd.enabled = false; gd.needsReauth = false;
@@ -2317,61 +2321,70 @@ function gdrive_reconnect(){
 
 // ── サインアウト ──
 function gdrive_signOut(){
-  if(!confirm('Google アカウントとの連携を解除しますか？')) return;
+  if(!confirm('Google Drive との連携を切断しますか？\nDrive 上のデータは削除されません。')) return;
   var token = gapi.client ? gapi.client.getToken() : null;
   if(token) google.accounts.oauth2.revoke(token.access_token, function(){});
   if(gapi.client) gapi.client.setToken(null);
   gd.ready = false; gd.enabled = false; gd.needsReauth = false;
-  gd.fileId = null; gd._tokenExpAt = null;
+  gd.fileId = null; gd._tokenExpAt = null; gd._accessToken = null;
   gdrive_saveSettings(); gdrive_updateUI();
-  var an = document.getElementById('drive-user-name');
-  if(an) an.textContent = '—';
 }
 
 // ── UI 更新 ──
 function gdrive_updateUI(){
-  var bar  = document.getElementById('gdrive-bar');
-  var dot  = document.getElementById('gdrive-dot');
-  var lbl  = document.getElementById('gdrive-label');
-  var sbtn = document.getElementById('gdrive-sync-btn');
-  var tbtn = document.getElementById('drive-toggle-btn');
-  var asc  = document.getElementById('drive-auth-section');
-  var ls   = document.getElementById('drive-last-sync');
-  var an   = document.getElementById('drive-user-name');
+  // ── 新・試合履歴タブ内パネル ──
+  var dot2    = document.getElementById('gdrive-dot2');
+  var lbl2    = document.getElementById('gdrive-label2');
+  var actions = document.getElementById('drive-sync-actions');
+  var info    = document.getElementById('drive-sync-info');
+  var ls      = document.getElementById('drive-last-sync');
+  var an      = document.getElementById('drive-user-name');
 
-  bar.style.display = gd.enabled ? '' : 'none';
+  if(!dot2) return; // パネルがまだ DOM にない
 
-  if(gd.busy){
-    dot.className = 'gdrive-dot busy';
-    lbl.innerHTML = '<strong>Google Drive</strong> — 同期中…';
-    sbtn.style.display = 'none';
+  // 共通ヘルパー: ボタン HTML 生成
+  function btn(cls, fn, label){
+    return '<button class="gdrive-btn '+cls+'" onclick="'+fn+'()">'+label+'</button>';
+  }
+
+  if(!gd.enabled){
+    dot2.className = 'gdrive-dot';
+    dot2.style.background = 'var(--text3)';
+    lbl2.innerHTML = '<span style="color:var(--text3)">Google Drive 未連携</span>';
+    actions.innerHTML = btn('primary','gdrive_toggleEnable','☁️ 連携を開始');
+    if(info) info.style.display = 'none';
+
+  } else if(gd.busy){
+    dot2.className = 'gdrive-dot busy';
+    lbl2.innerHTML = '<strong style="color:var(--text)">Google Drive</strong> <span style="color:var(--text3)">— 同期中…</span>';
+    actions.innerHTML = '<span style="font-size:10px;color:var(--text3)">処理中…</span>';
+
   } else if(gd.ready){
-    dot.className = 'gdrive-dot ok';
-    lbl.innerHTML = '<strong>Google Drive</strong> — 同期済み'
-      +(gd.lastSync ? ' <span style="font-size:10px;color:var(--text3)">'+_fmtTime(gd.lastSync)+'</span>' : '');
-    sbtn.style.display = '';
-    sbtn.textContent = '🔄 今すぐ同期';
-    sbtn.onclick = gdrive_manualSync;
-  } else if(gd.needsReauth){
-    // サイレント失敗 → 再接続ボタンをバーに表示（ポップアップなし）
-    dot.className = 'gdrive-dot err';
-    lbl.innerHTML = '<strong>Google Drive</strong> — セッション切れ';
-    sbtn.style.display = '';
-    sbtn.textContent = '🔑 再接続';
-    sbtn.onclick = gdrive_reconnect;
-  } else if(gd.enabled){
-    dot.className = 'gdrive-dot err';
-    lbl.innerHTML = '<strong>Google Drive</strong> — 未接続';
-    sbtn.style.display = 'none';
-  }
+    dot2.className = 'gdrive-dot ok';
+    lbl2.innerHTML = '<strong style="color:var(--text)">Google Drive</strong> <span style="color:var(--green);font-size:10px">● 接続中</span>';
+    actions.innerHTML =
+      btn('','gdrive_upload','⬆️ クラウドへ保存') +
+      btn('','gdrive_download','⬇️ クラウドから復元') +
+      btn('danger','gdrive_signOut','切断');
+    if(info){
+      info.style.display = 'flex';
+      if(an) an.textContent = gd._userName || gd._userEmail || '';
+      if(ls && gd.lastSync) ls.textContent = _fmtTime(gd.lastSync);
+    }
 
-  if(tbtn){
-    tbtn.textContent = gd.enabled ? '連携を解除' : '連携を開始';
-    tbtn.className   = gd.enabled ? 'gdrive-btn danger' : 'gdrive-btn primary';
+  } else if(gd.needsReauth){
+    dot2.className = 'gdrive-dot err';
+    lbl2.innerHTML = '<strong style="color:var(--text)">Google Drive</strong> <span style="color:var(--red);font-size:10px">セッション切れ</span>';
+    actions.innerHTML = btn('primary','gdrive_reconnect','🔑 再接続') + btn('danger','gdrive_signOut','切断');
+    if(info) info.style.display = 'none';
+
+  } else {
+    // enabled but not connected yet
+    dot2.className = 'gdrive-dot err';
+    lbl2.innerHTML = '<strong style="color:var(--text)">Google Drive</strong> <span style="color:var(--text3);font-size:10px">— 未接続</span>';
+    actions.innerHTML = btn('primary','gdrive_reconnect','🔑 接続') + btn('danger','gdrive_toggleEnable','連携解除');
+    if(info) info.style.display = 'none';
   }
-  if(asc) asc.style.display = (gd.enabled && gd.ready) ? '' : 'none';
-  if(ls && gd.lastSync) ls.textContent = _fmtTime(gd.lastSync);
-  if(an && gd._userName) an.textContent = gd._userName || gd._userEmail || '—';
 }
 function _fmtTime(iso){
   if(!iso) return '—';
@@ -2495,11 +2508,30 @@ function gdrive_scheduleSave(){
   }, GDRIVE_DEBOUNCE_MS);
 }
 
-// ── 手動同期 ──
-function gdrive_manualSync(){
+// ── Upload: ローカル → Drive ──
+function gdrive_upload(){
   if(!gd.enabled){ alert('Google Drive 連携が有効になっていません。'); return; }
   if(!gd.ready)  { gdrive_reconnect(); return; }
+  var lastSyncStr = gd.lastSync ? '\n最終同期: ' + _fmtTime(gd.lastSync) : '';
+  if(!confirm('ローカルのデータを Google Drive にアップロードします。\nDrive 上の既存データは上書きされます。' + lastSyncStr + '\n\n続けますか？')) return;
   gdrive_writeRemote(gdrive_buildPayload());
+}
+
+// ── Download: Drive → ローカル ──
+function gdrive_download(){
+  if(!gd.enabled){ alert('Google Drive 連携が有効になっていません。'); return; }
+  if(!gd.ready)  { gdrive_reconnect(); return; }
+  if(!confirm('Google Drive からデータを取得してローカルに復元します。\n現在のローカルデータは失われます。\n\n続けますか？')) return;
+  gdrive_fetchRemote(function(data, remoteTs){
+    if(!data){ alert('Drive にデータが見つかりませんでした。'); return; }
+    gd.remoteData = data; gd.remoteTs = remoteTs;
+    gdrive_applyRemote(true); // 確認ダイアログをスキップ（既に上で確認済み）
+  });
+}
+
+// ── 手動同期（後方互換） ──
+function gdrive_manualSync(){
+  gdrive_upload();
 }
 
 // ── リモートの方が新しいか判定してバナー表示 ──
@@ -2534,9 +2566,9 @@ function gdrive_checkOnStartup(){
 }
 
 // ── バナー操作 ──
-function gdrive_applyRemote(){
+function gdrive_applyRemote(skipConfirm){
   if(!gd.remoteData){ alert('リモートデータがありません。'); return; }
-  if(!confirm('Google Drive のデータでローカルを上書きしますか？\n現在のローカルデータは失われます。')) return;
+  if(!skipConfirm && !confirm('Google Drive のデータでローカルを上書きしますか？\n現在のローカルデータは失われます。')) return;
   var data = gd.remoteData;
   if(data.courseRecords) courseRecords = Object.assign({}, courseRecords, data.courseRecords);
   if(data.matchHistory)  matchHistory  = data.matchHistory;
