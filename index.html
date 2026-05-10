@@ -194,9 +194,11 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 /* 試合履歴 */
 .match-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem;margin-bottom:10px;cursor:pointer;transition:all .2s}
 .match-card:hover{border-color:var(--border2);transform:translateY(-1px)}
-.match-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.match-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:nowrap;gap:6px}
+.match-hdr-left{flex:1;min-width:0;overflow:hidden}
+.match-hdr-right{display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}
 .match-no{font-size:13px;font-weight:800;font-family:var(--font-mk)}
-.match-pts{font-size:20px;font-weight:800;font-family:var(--font-mk)}
+.match-pts{font-size:18px;font-weight:800;font-family:var(--font-mk);white-space:nowrap}
 .pts-high{color:var(--yellow)}.pts-mid{color:#85B7EB}.pts-low{color:var(--text2)}
 .match-sub{font-size:11px;color:var(--text2)}
 .match-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
@@ -212,6 +214,12 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .bar-avg{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--blue),#85B7EB);transition:width .5s cubic-bezier(.4,0,.2,1)}
 .bar-rate{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),#5dca8a);transition:width .5s cubic-bezier(.4,0,.2,1)}
 .bar-val{font-size:11px;font-weight:700;width:44px;text-align:right}
+/* ランキング+コース戦績 統合アコーディオン */
+.rnk-wrap{border-bottom:1px solid var(--border)}
+.rnk-row{display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;transition:background .15s}
+.rnk-row:hover{background:var(--bg3)}
+.rnk-detail{display:none;padding:0 0 12px 0;animation:slideIn .2s ease-out}
+.rnk-detail.open{display:block}
 .empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px}
 .sec-lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
 /* モーダル */
@@ -269,7 +277,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .setup-hint{font-size:10px;color:var(--text3);margin-top:2px}
 /* 設定モーダル */
 .modal-setup-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:8px;max-height:320px;overflow-y:auto;padding:2px;scrollbar-width:thin;scrollbar-color:var(--border) transparent;justify-items:center}
-.modal-setup-grid.kart-grid{grid-template-columns:repeat(4,1fr);justify-items:center}
+.modal-setup-grid.kart-grid{grid-template-columns:repeat(3,1fr);justify-items:center}
 .modal-setup-grid::-webkit-scrollbar{width:5px}
 .modal-setup-grid::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .setup-opt{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:8px 6px;cursor:pointer;text-align:center;transition:all .15s}
@@ -353,10 +361,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 <div class="metrics" id="metrics"></div>
 <div class="tabs">
   <button class="tab on" id="tab-btn-session" onclick="switchTab('session')">🏁 <span data-i18n="tab_session">試合入力</span></button>
-  <button class="tab" id="tab-btn-courses" onclick="switchTab('courses')">🗺 <span data-i18n="tab_courses">コース戦績</span></button>
   <button class="tab" id="tab-btn-matches" onclick="switchTab('matches')">📋 <span data-i18n="tab_matches">試合履歴</span></button>
   <button class="tab" id="tab-btn-ranking" onclick="switchTab('ranking')">🏅 <span data-i18n="tab_ranking">ランキング</span></button>
-  <button class="tab" id="tab-btn-chart" onclick="switchTab('chart')">📊 <span data-i18n="tab_chart">グラフ</span></button>
   <button class="tab" id="tab-btn-tier" onclick="switchTab('tier')">🎯 Tier</button>
   <button class="tab" id="tab-btn-help" onclick="switchTab('help')">❓ <span data-i18n="tab_help">使い方</span></button>
 </div>
@@ -372,12 +378,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <button class="gdrive-btn" onclick="gdrive_dismissBanner()">無視</button>
 </div>
 <div id="tab-session"><div id="session-area"></div></div>
-<div id="tab-courses" style="display:none">
-  <div style="margin-bottom:12px">
-    <div class="sec-lbl">コース戦績</div>
-  </div>
-  <div id="courses-accordion"></div>
-</div>
+
 <div id="tab-matches" style="display:none">
   <!-- Drive 同期パネル -->
   <div class="drive-sync-panel" id="drive-sync-panel">
@@ -400,20 +401,17 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div id="match-list"></div>
 </div>
 <div id="tab-ranking" style="display:none">
-  <div class="sec-lbl" style="margin-bottom:10px">コース別ランキング</div>
-  <div class="sort-bar">
-    <button class="sort-btn on" onclick="setSort('avg')">平均順位が良い順</button>
-    <button class="sort-btn" onclick="setSort('rate')">入賞率が高い順</button>
-    <button class="sort-btn" onclick="setSort('tries')">試行回数が多い順</button>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div class="sec-lbl">コース別ランキング</div>
+    <div class="sort-bar" style="margin-bottom:0">
+      <button class="sort-btn on" onclick="setSort('avg')">平均順位</button>
+      <button class="sort-btn" onclick="setSort('rate')">入賞率</button>
+      <button class="sort-btn" onclick="setSort('tries')">試行回数</button>
+    </div>
   </div>
   <div id="rank-list"></div>
 </div>
-<div id="tab-chart" style="display:none">
-  <div class="sec-lbl" style="margin-bottom:10px" id="chart-avg-title">平均順位（低いほど良い）</div>
-  <div id="chart-avg" style="margin-bottom:1.5rem"></div>
-  <div class="sec-lbl" style="margin-bottom:10px" id="chart-rate-title">入賞率（%）</div>
-  <div id="chart-rate"></div>
-</div>
+
 <div id="tab-tier" style="display:none">
   <div id="tier-analysis"></div>
 </div>
@@ -433,7 +431,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 </div>
 
 <div id="modal-setup" class="mbg" style="display:none" onclick="closeMBg('modal-setup',event)">
-  <div class="modal" style="width:380px">
+  <div class="modal" style="width:min(420px,95vw)">
     <div class="modal-title" id="setup-modal-title">キャラクターを選択</div>
     <div class="modal-note" id="setup-modal-note">使用するキャラクターを選んでください。</div>
     <div class="modal-setup-grid" id="setup-modal-grid"></div>
@@ -458,7 +456,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 <div id="modal-edit" class="mbg" style="display:none" onclick="closeMBg('modal-edit',event)">
   <div class="modal" style="width:380px">
     <div class="modal-title">✏️ 試合を訂正</div>
-    <div class="modal-note">順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。</div>
+    <div class="modal-note">コース・順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。</div>
     <div id="edit-race-list"></div>
     <div class="fr" style="margin-top:12px">
       <label class="fl" id="edit-char-label">キャラクター</label>
@@ -1050,7 +1048,6 @@ function commitRoad(){
     roadObj={id:id,name:name,nameEn:name,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
     customRoads.push(roadObj);
     courseRecords[id]=[];
-    renderCourseGrid();
   }
   // 道モードOFF・tempRoadに設定して通常モードへ・作成した道を自動選択
   roadMode=false;roadFrom=null;roadTo=null;
@@ -1254,10 +1251,9 @@ function buildDetailHTML(id){
 function delCourseRec(cid,idx){
   if(!confirm(lang==='en'?'Delete this record?':'この記録を削除しますか？'))return;
   courseRecords[cid].splice(idx,1);
-  var prevSel=selCourse;
-  selCourse=null;
-  renderMetrics();renderCourseGrid();
-  if(prevSel)selectCourse(prevSel);
+  renderMetrics();
+  // ランキングタブで展開中なら再描画（アコーディオン維持）
+  if(typeof renderRanking==='function')renderRanking();
   autoSave();
 }
 function renderMatches(){
@@ -1295,12 +1291,12 @@ function renderMatches(){
     var top12cnt=m.races.filter(function(r){return r.rank<=topN;}).length;
     return '<div class="match-card" onclick="toggleMatch('+m.id+')">'
       +'<div class="match-hdr">'
-      +'<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">'
+      +'<div class="match-hdr-left" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
       +'<span class="match-no">'+(lang==="en"?"Match #":"試合 #")+(matchHistory.length-i)+"</span>"
       +tierBadge
-      +'<span style="font-size:11px;color:var(--text3);margin-left:2px">'+m.date+'</span>'
+      +'<span style="font-size:11px;color:var(--text3)">'+m.date+'</span>'
       +'</div>'
-      +'<div style="display:flex;align-items:center;gap:8px">'
+      +'<div class="match-hdr-right">'
       +'<div class="match-pts '+ptsClass+'">'+m.totalPts+' pt</div>'
       +'<button class="save-btn" style="font-size:10px;padding:4px 8px" title="'+(lang==="en"?'Export this match':'この試合を保存')+'" onclick="event.stopPropagation();exportSingleMatch('+m.id+')">💾</button>'
       +'<button class="save-btn" style="font-size:10px;padding:4px 10px" onclick="event.stopPropagation();openEditMatch('+m.id+')">'+(lang==="en"?'✏️ Edit':'✏️ 訂正')+'</button>'
@@ -1311,6 +1307,8 @@ function renderMatches(){
   }).join('');
 }
 function toggleMatch(id){expandedMatch=expandedMatch===id?null:id;renderMatches();}
+// ランキング展開中コースID
+var selRankCourse=null;
 function renderRanking(){
   var items=getAllCourses().map(function(c){return {c:c,s:stats(courseRecords[c.id]||[])};}).filter(function(x){return x.s;});
   if(sortMode==='avg')items.sort(function(a,b){return a.s.avg-b.s.avg;});
@@ -1318,22 +1316,52 @@ function renderRanking(){
   if(sortMode==='tries')items.sort(function(a,b){return b.s.tries-a.s.tries;});
   var medals=['🥇','🥈','🥉'];
   var medalColors=['#F5C518','#85B7EB','#5dca8a'];
-  document.getElementById('rank-list').innerHTML=items.length?items.map(function(item,i){
+  if(!items.length){
+    document.getElementById('rank-list').innerHTML='<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>';
+    return;
+  }
+  var html=items.map(function(item,i){
     var medal=medals[i]||('<span style="font-size:13px;font-weight:700;color:var(--text3)">'+(i+1)+'</span>');
     var valStr=sortMode==='avg'?item.s.avg.toFixed(1)+(lang==='en'?'':' 位'):sortMode==='rate'?Math.round(item.s.rate)+'%':item.s.tries+(lang==='en'?' times':'回');
     var subStr=sortMode!=='avg'?(lang==='en'?'Avg '+item.s.avg.toFixed(1):'平均 '+item.s.avg.toFixed(1)+'位'):(lang==='en'?'Win '+Math.round(item.s.rate)+'%':'入賞率 '+Math.round(item.s.rate)+'%');
     var color=medalColors[i]||'var(--text)';
-    return '<div class="rnk-row">'
-      +'<div style="font-size:16px;width:28px;text-align:center">'+medal+'</div>'
-      +'<div style="flex-shrink:0">'+(item.c.isRoad?roadThumbInlineHtml(item.c,48,26,'4px'):('<img src="'+(courseImages[item.c.id]||defaultImgPath(item.c))+'" style="width:48px;height:26px;object-fit:cover;border-radius:4px;display:block" alt="'+cN(item.c)+'">' ))+'</div>'
-      +'<div style="flex:1"><div style="font-size:12px;font-weight:700">'+cN(item.c)+'</div>'
+    var isOpen=selRankCourse===item.c.id;
+    var thumbHtml=item.c.isRoad?roadThumbInlineHtml(item.c,48,26,'4px'):('<img src="'+(courseImages[item.c.id]||defaultImgPath(item.c))+'" style="width:48px;height:26px;object-fit:cover;border-radius:4px;display:block" alt="'+cN(item.c)+'">');
+    var detailHtml=isOpen?buildDetailHTML(item.c.id):'';
+    return '<div class="rnk-wrap">'
+      +'<div class="rnk-row" data-rnk-course="'+item.c.id+'">'
+      +'<div style="font-size:16px;width:28px;text-align:center;flex-shrink:0">'+medal+'</div>'
+      +'<div style="flex-shrink:0">'+thumbHtml+'</div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+cN(item.c)+'</div>'
       +'<div style="font-size:10px;color:var(--text3)">'+(lang=='en'&&item.c.cupEn?item.c.cupEn:item.c.cup)+' · '+item.s.tries+(lang=='en'?' tries':'回')+'</div></div>'
-      +'<div style="text-align:right"><div style="font-size:14px;font-weight:800;font-family:var(--font-mk);color:'+color+'">'+valStr+'</div>'
-      +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+subStr+'</div></div></div>';
-  }).join(''):('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
+      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:14px;font-weight:800;font-family:var(--font-mk);color:'+color+'">'+valStr+'</div>'
+      +'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+subStr+'</div></div>'
+      +'<div style="font-size:10px;color:var(--text3);width:14px;text-align:center;flex-shrink:0">'+(isOpen?'▲':'▼')+'</div>'
+      +'</div>'
+      +'<div class="rnk-detail'+(isOpen?' open':'')+'" id="rnkd-'+item.c.id+'">'+detailHtml+'</div>'
+      +'</div>';
+  }).join('');
+  document.getElementById('rank-list').innerHTML=html;
+  // イベント委任（onclick で一元管理：重複登録なし）
+  var rl=document.getElementById('rank-list');
+  rl.onclick=function(e){
+    // del-rec
+    var delRec=e.target.closest('[data-del-rec]');
+    if(delRec){delCourseRec(delRec.getAttribute('data-del-course'),parseInt(delRec.getAttribute('data-del-rec')));return;}
+    // del-road
+    var delRoad=e.target.closest('[data-del-road]');
+    if(delRoad){deleteRoad(delRoad.getAttribute('data-del-road'));return;}
+    // ランキング行展開
+    var row=e.target.closest('[data-rnk-course]');
+    if(!row)return;
+    var cid=row.getAttribute('data-rnk-course');
+    selRankCourse=selRankCourse===cid?null:cid;
+    renderRanking();
+  };
 }
 function setSort(mode){
   sortMode=mode;
+  selRankCourse=null;
   document.querySelectorAll('.sort-btn').forEach(function(btn,i){btn.classList.toggle('on',['avg','rate','tries'][i]===mode);});
   renderRanking();
 }
@@ -1379,14 +1407,15 @@ function saveRoad(){
   var newRoad={id:id,name:name,nameEn:name,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:fromId,toId:toId,fromName:fromC.name,toName:toC.name};
   customRoads.push(newRoad);
   courseRecords[id]=[];
-  closeM('modal-road');renderCourseGrid();renderMetrics();renderSession();autoSave();
+  closeM('modal-road');renderMetrics();renderSession();autoSave();
 }
 function deleteRoad(id){
   if(!confirm(lang==='en'?'Delete this intermission?':'削除しますか？'))return;
   customRoads=customRoads.filter(function(r){return r.id!==id;});
   delete courseRecords[id];delete courseImages[id];
-  selCourse=null;
-  renderCourseGrid();renderMetrics();autoSave();
+  selCourse=null;selRankCourse=null;renderMetrics();
+  if(typeof renderRanking==='function')renderRanking();
+  autoSave();
 }
 // ===== i18n =====
 let lang='ja';
@@ -1422,7 +1451,7 @@ const I18N={
     chart_rate_title:'位以上入賞率（%）',
     tier_summary:'Tier別サマリー', tier_detail:'Tier別詳細',
     edit_title:'✏️ 試合を訂正',
-    edit_note:'順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。',
+    edit_note:'コース・順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。',
     edit_char:'キャラクター', edit_kart:'マシン',
     edit_memo_label:'試合メモ', edit_tier_label:'Tier', edit_date_label:'日付',
     edit_cancel:'キャンセル', edit_delete:'試合を削除', edit_save:'保存',
@@ -1462,7 +1491,7 @@ const I18N={
     chart_rate_title:'th+ Win Rate (%)',
     tier_summary:'Tier Summary', tier_detail:'Tier Detail',
     edit_title:'✏️ Edit Match',
-    edit_note:'Edit rank, character, kart, tier or date, then save.',
+    edit_note:'Edit course, rank, character, kart, tier or date, then save.',
     edit_char:'Character', edit_kart:'Kart',
     edit_memo_label:'Note', edit_tier_label:'Tier', edit_date_label:'Date',
     edit_cancel:'Cancel', edit_delete:'Delete Match', edit_save:'Save',
@@ -1478,10 +1507,9 @@ function toggleLang(){
   lang=lang==='ja'?'en':'ja';
   document.getElementById('lang-toggle').textContent=lang==='ja'?'EN':'JA';
   applyI18n();
-  renderMetrics();renderSession();renderCourseGrid();
+  renderMetrics();renderSession();
   if(document.getElementById('tab-matches').style.display!=='none')renderMatches();
   if(document.getElementById('tab-ranking').style.display!=='none')renderRanking();
-  if(document.getElementById('tab-chart').style.display!=='none')renderChart();
   if(document.getElementById('tab-tier').style.display!=='none')renderTierAnalysis();
   if(document.getElementById('tab-help').style.display!=='none')renderHelp();
   autoSave();
@@ -1511,24 +1539,14 @@ function applyI18n(){
   var ecancel=document.querySelector('#modal-edit .bc');if(ecancel)ecancel.textContent=t('edit_cancel');
   var edelete=document.querySelector('#modal-edit .bs-r');if(edelete)edelete.textContent=t('edit_delete');
   var esave=document.querySelector('#modal-edit .bs');if(esave)esave.textContent=t('edit_save');
-  // courses tab header
-  var cTitle=document.querySelector('#tab-courses .sec-lbl');
-  if(cTitle)cTitle.textContent=t('courses_title');
-  var cRoadBtn=document.querySelector('#tab-courses .save-btn');
-  if(cRoadBtn)cRoadBtn.textContent=t('courses_add_road');
+
   // matches tab header
   var mTitle=document.querySelector('#tab-matches .sec-lbl');
   if(mTitle)mTitle.textContent=t('matches_title');
   // ranking tab header
   var rTitle=document.querySelector('#tab-ranking .sec-lbl');
   if(rTitle)rTitle.textContent=t('ranking_title');
-  // chart titles
-  var caTitle=document.querySelector('#tab-chart .sec-lbl');
-  if(caTitle)caTitle.textContent=t('chart_avg_title');
-  var caTitle2=document.getElementById('chart-avg-title');
-  if(caTitle2)caTitle2.textContent=t('chart_avg_title');
-  var crTitle=document.getElementById('chart-rate-title');
-  if(crTitle)crTitle.textContent=topN+t('chart_rate_title');
+
   // sort buttons
   var sortBtns=document.querySelectorAll('.sort-btn');
   if(sortBtns[0])sortBtns[0].textContent=t('sort_avg');
@@ -1536,10 +1554,8 @@ function applyI18n(){
   if(sortBtns[2])sortBtns[2].textContent=t('sort_tries');
   // 言語依存の描画を再実行
   renderSession();
-  renderCourseGrid();
   renderMetrics();
   if(document.getElementById('tab-ranking').style.display!=='none')renderRanking();
-  if(document.getElementById('tab-chart').style.display!=='none')renderChart();
   if(document.getElementById('tab-matches').style.display!=='none')renderMatches();
 }
 
@@ -1560,21 +1576,19 @@ function renderHelp(){
 <li>Tap <strong>🏆 Submit Match</strong> to save</li>
 </ol>
 <p>Tap any recorded race row to re-select its course and rank (edit mode). The add button changes to a correction button. Tap ✕ to delete a race. <em>Reset</em> clears the whole match.</p>`},
-    {icon:'🛣️',title:'Road Mode (Intermission)',body:`
-<p>Road sections connect two courses on the map. <strong>Rainbow Road cannot be selected as a start point.</strong> To record one:</p>
+    {icon:'🛣️',title:'Intermission (Road)',body:`
+<p>Record the road sections between courses.</p>
 <ol>
-<li>Tap <strong>🛣️ Road Mode</strong> in the session panel</li>
-<li>Tap the <span style="color:#9FE1CB;font-weight:700">From</span> course (turns teal) — Rainbow Road is excluded</li>
-<li>Tap the <span style="color:#F5C518;font-weight:700">To</span> course (turns yellow) from the valid connections shown</li>
-<li>Tap <strong>Add as Intermission</strong> — enter a name (optional)</li>
-<li>Road Mode turns off automatically; the new road is pre-selected, just pick a rank</li>
+<li>Tap <strong>🛣️ Intermission</strong> in the session panel to enable</li>
+<li>Tap the <span style="color:#9FE1CB;font-weight:700">From</span> course (turns teal)</li>
+<li>Tap the <span style="color:#F5C518;font-weight:700">To</span> course (turns yellow) from valid connections</li>
+<li>The road is pre-selected automatically — just pick a rank</li>
 </ol>
 <p>If the same From→To road already exists it will be reused.</p>`},
-    {icon:'🗺',title:'Course Records',body:`
-<p>All 28 courses + custom roads sorted A–Z. Course thumbnails are loaded automatically from the <code>images/</code> folder (.avif for courses, .png for characters/karts). Tap a card to expand stats and race history.</p>`},
+    {icon:'🗺',title:'Course Records (in Ranking)',body:`<p>The Ranking tab integrates course rankings with detailed stats. Tap a course row to expand average rank, win rate, attempts, and race history. Switch sort order between Average Rank, Win Rate, or Attempts.</p>`},
     {icon:'📋',title:'Match History',body:`<p>All matches newest-first. Tap a card to expand race details. Tap <strong>💾</strong> on a match to export that single match as a JSON file. Tap <strong>✏️ Edit</strong> to change rank, character, kart, tier, date or note. <strong>Delete Match</strong> is permanent.</p>`},
     {icon:'🏅',title:'Ranking',body:`<p>Sort courses by best average rank, highest win rate, or most attempts.</p>`},
-    {icon:'📊',title:'Charts',body:`<p>Bar charts for average rank (lower = better) and win rate by course, including intermission roads.</p>`},
+
     {icon:'🎯',title:'Tier Analysis',body:`<p>Per-tier breakdown: match count, average score, average rank, win rate, best/worst score, and a sparkline of recent results.</p>`},
     {icon:'💾',title:'Data',body:`<p><strong>Export Data (💾 button at bottom)</strong> — downloads a full JSON backup of all matches and settings.<br><strong>💾 button on each match card</strong> — exports just that one match as a JSON file.<br><strong>Import Data</strong> — restores from a JSON file. Existing .png/.avif image paths are protected and will not be overwritten by old emoji data.<br>Data auto-saves to localStorage on every action.</p>`},
     {icon:'⚙️',title:'Settings',body:`<p><strong>Character / Kart</strong> — tap the panel in Match Input to open the image grid and select.<br><strong>Win Cutoff</strong> — change the placement threshold (default: top 12) via the <em>Change</em> button in the setup panel.<br><strong>Language</strong> — tap EN/JA in the header to toggle.</p>`},
@@ -1591,20 +1605,18 @@ function renderHelp(){
 </ol>
 <p>記録済みのレース行をタップすると<strong>修正モード</strong>になり、コースと順位を選び直して上書き保存できます。追加ボタンが「修正」ボタンに変わります。✕ で削除、<em>リセット</em> で全クリア。</p>`},
     {icon:'🛣️',title:'道中コース',body:`
-<p>コース間の「道」セクションを記録できます。<strong>レインボーロードは始点に選べません</strong>（終点専用）。</p>
+<p>コース間の「道」セクションを記録できます。</p>
 <ol>
 <li>試合入力パネルの <strong>🛣️ 道中コース</strong> をタップしてONにする</li>
-<li><span style="color:#9FE1CB;font-weight:700">始点</span> コースをタップ（緑枠）— レインボーロードは除外されます</li>
+<li><span style="color:#9FE1CB;font-weight:700">始点</span> コースをタップ（緑枠）</li>
 <li>接続可能な<span style="color:#F5C518;font-weight:700">終点</span> コースをタップ（黄枠）</li>
-<li><strong>道として追加</strong> をタップ → 名前を入力（省略可）</li>
-<li>道モードが自動でOFFになり、作成した道が自動選択状態になるので、あとは順位を選ぶだけ</li>
+<li>作成した道が自動選択状態になるので、あとは順位を選ぶだけ</li>
 </ol>
 <p>同じ始点→終点の道が既に存在する場合は既存の道が再利用されます。</p>`},
-    {icon:'🗺',title:'コース戦績',body:`
-<p>全28コース＋カスタム道を50音順で表示。コースサムネイルは <code>images/</code> フォルダから自動で読み込まれます（コースは .avif、キャラ・マシンは .png）。カードをタップすると戦績・履歴が展開されます。</p>`},
+    {icon:'🗺',title:'コース戦績（ランキング内）',body:`<p>ランキングタブにコース別ランキングとコース戦績を統合。コース名をタップするとその下に平均順位・入賞率・試行回数・レース履歴が展開されます。ソート順は「平均順位」「入賞率」「試行回数」で切り替え可能です。</p>`},
     {icon:'📋',title:'試合履歴',body:`<p>全試合を新しい順で表示。カードをタップして詳細を展開。各試合カードの<strong>💾</strong>ボタンで、その1試合だけをJSONファイルに書き出せます。<strong>✏️ 訂正</strong>で順位・キャラ・マシン・Tier・日付・メモを変更できます。<strong>試合を削除</strong>は取り消し不可です。</p>`},
     {icon:'🏅',title:'ランキング',body:`<p>コースを「平均順位が良い順」「入賞率が高い順」「試行回数が多い順」で並び替えて表示します。道中コースも含みます。</p>`},
-    {icon:'📊',title:'グラフ',body:`<p>コース別の平均順位（低いほど良い）と入賞率（%）を棒グラフで表示します。道中コースも含みます。</p>`},
+
     {icon:'🎯',title:'Tier分析',body:`<p>Tier別に試合数・平均得点・平均順位・入賞率・最高/最低得点・得点推移スパークラインを表示します。</p>`},
     {icon:'💾',title:'データ管理',body:`<p><strong>データを保存（画面下の💾ボタン）</strong> — 全データをJSONでエクスポート。<br><strong>試合カードの💾ボタン</strong> — その1試合だけをJSONファイルに保存。<br><strong>データを読込</strong> — JSONをインポート。既存の.png/.avif画像パスは保護され、旧絵文字データで上書きされません。<br>操作のたびに自動保存されるので、リロードしてもデータは消えません。</p>`},
     {icon:'⚙️',title:'設定',body:`<p><strong>キャラ・マシン</strong> — 試合入力パネルのカードをタップすると画像グリッドが開き、選択できます。<br><strong>入賞基準</strong> — セットアップパネルの<em>変更</em>ボタンでデフォルト12位以内を変更できます。<br><strong>言語</strong> — ヘッダーのEN/JAボタンで切り替えられます。</p>`},
@@ -1623,12 +1635,11 @@ function renderHelp(){
 }
 
 function switchTab(tab){
-  var tabs=['session','courses','matches','ranking','chart','tier','help'];
-  tabs.forEach(function(tabName){document.getElementById('tab-'+tabName).style.display=tabName===tab?'':'none';});
+  var tabs=['session','matches','ranking','tier','help'];
+  tabs.forEach(function(tabName){var el=document.getElementById('tab-'+tabName);if(el)el.style.display=tabName===tab?'':'none';});
   document.querySelectorAll('.tab').forEach(function(el,i){el.classList.toggle('on',tabs[i]===tab);});
-  if(tab==='matches'){ renderMatches(); } // gdrive_updateUI は renderMatches 先頭で呼ぶ
+  if(tab==='matches'){ renderMatches(); }
   if(tab==='ranking')renderRanking();
-  if(tab==='chart')renderChart();
   if(tab==='tier')renderTierAnalysis();
   if(tab==='help')renderHelp();
 }
@@ -1685,7 +1696,7 @@ function importData(input){
       selTier=null;selCourseId=null;selRank=null;
       session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
       autoSave();
-      renderMetrics();renderSession();renderCourseGrid();
+      renderMetrics();renderSession();
       alert(lang==='en'?'Data imported!':'データを読み込みました！');
     }catch(err){alert(lang==='en'?'Import failed.':'読み込みに失敗しました。');}
   };
@@ -1826,15 +1837,23 @@ function openEditMatch(id){
   document.getElementById('edit-char').innerHTML=charOpts;
   var kartOpts=karts.map(function(k){return '<option value="'+k.id+'"'+(k.id===m.kartId?' selected':'')+'>'+k.emoji+' '+ktN(k)+'</option>';}).join('');
   document.getElementById('edit-kart').innerHTML=kartOpts;
-  // race list
+  // race list — コース変更 select + 順位 select
+  var _allCourseOpts=getAllCourses().map(function(cc){
+    return '<option value="'+cc.id+'">'+cc.emoji+' '+cc.name+'</option>';
+  }).join('');
   var raceList=m.races.map(function(r,i){
     var c=getAllCourses().find(function(x){return x.id===r.courseId;});
-    return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)">'
-      +'<span style="font-size:11px;color:var(--text3);width:22px;text-align:center">'+(i+1)+'</span>'
-      +'<span style="flex:1;font-size:12px">'+(c?c.emoji+' '+c.name:'不明')+'</span>'
-      +'<select onchange="updateEditRace('+i+',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);width:72px">'
+    var courseOpts=getAllCourses().map(function(cc){
+      return '<option value="'+cc.id+'"'+(cc.id===r.courseId?' selected':'')+'>'+cc.emoji+' '+cc.name+'</option>';
+    }).join('');
+    return '<div style="border-bottom:1px solid var(--border);padding:6px 0">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">'
+      +'<span style="font-size:11px;color:var(--text3);width:22px;text-align:center;flex-shrink:0">'+(i+1)+'</span>'
+      +'<select onchange="updateEditCourse('+i+',this.value)" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);min-width:0">'+courseOpts+'</select>'
+      +'<select onchange="updateEditRace('+i+',this.value)" style="font-size:12px;padding:4px 6px;border:1px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);width:68px;flex-shrink:0">'
       +Array.from({length:24},function(_,ri){return '<option value="'+(ri+1)+'"'+(r.rank===ri+1?' selected':'')+'>'+(ri+1)+'位</option>';}).join('')
       +'</select>'
+      +'</div>'
       +'</div>';
   }).join('');
   document.getElementById('edit-race-list').innerHTML=raceList;
@@ -1850,6 +1869,10 @@ function updateEditRace(idx,val){
   var m=matchHistory.find(function(x){return x.id===editMatchId;});
   if(m&&m.races[idx])m.races[idx].rank=parseInt(val);
 }
+function updateEditCourse(idx,val){
+  var m=matchHistory.find(function(x){return x.id===editMatchId;});
+  if(m&&m.races[idx])m.races[idx].courseId=val;
+}
 function saveEditMatch(){
   var m=matchHistory.find(function(x){return x.id===editMatchId;});
   if(!m)return;
@@ -1860,7 +1883,7 @@ function saveEditMatch(){
   m.totalPts=m.races.reduce(function(s,r){return s+pts(r.rank);},0);
   rebuildCourseRecords();
   closeM('modal-edit');
-  renderMatches();renderMetrics();renderCourseGrid();autoSave();
+  renderMatches();renderMetrics();autoSave();
 }
 function deleteMatch(){
   if(!confirm(lang==='en'?'Delete this match? This cannot be undone.':'この試合を削除しますか？'))return;
@@ -1976,18 +1999,11 @@ document.addEventListener('DOMContentLoaded', function(){
     if(cpCard){pickCourse(cpCard.getAttribute('data-pick-course'));return;}
   });
 
-  // コース戦績アコーディオン
-  document.getElementById('courses-accordion').addEventListener('click',function(e){
-    var card=e.target.closest('.ccard');
-    if(card){selectCourse(card.getAttribute('data-course-id'));return;}
-  });
-
   // 初期描画
   autoLoad();
   applyI18n();
   renderMetrics();
   renderSession();
-  renderCourseGrid();
 });
 
 // ===== Init =====
@@ -2579,7 +2595,7 @@ function gdrive_applyRemote(skipConfirm){
   if(data.topN)     topN     = data.topN;
   if(data.courseMemos && typeof courseMemos !== 'undefined') courseMemos = data.courseMemos;
   autoSave();
-  renderMetrics(); renderSession(); renderCourseGrid();
+  renderMetrics(); renderSession();
   if(typeof renderMatches === 'function') renderMatches();
   gdrive_dismissBanner();
   gd.lastSync = new Date().toISOString(); gdrive_saveSettings(); gdrive_updateUI();
