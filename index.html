@@ -221,6 +221,17 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .rnk-detail{display:none;padding:0 0 12px 0;animation:slideIn .2s ease-out}
 .rnk-detail.open{display:block}
 .empty{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px}
+/* 12p/24p モードトグル */
+.vs-toggle-bar{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:12px}
+.vs-toggle-lbl{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:0 6px;white-space:nowrap}
+.vs-btn{flex:1;padding:6px 10px;font-size:12px;font-weight:800;font-family:var(--font-mk);border-radius:7px;border:none;background:transparent;color:var(--text2);cursor:pointer;transition:all .18s;white-space:nowrap}
+.vs-btn.vs-sel{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(26,111,196,.4)}
+.vs-btn.vs-sel.vs-12{background:var(--red);box-shadow:0 2px 8px rgba(232,48,58,.4)}
+/* フィルタバー */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.filter-bar label{font-size:11px;color:var(--text2);white-space:nowrap;font-weight:600}
+.filter-input{width:60px;font-size:12px;padding:4px 8px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg2);color:var(--text);font-family:var(--font);text-align:center}
+.filter-input:focus{outline:none;border-color:var(--yellow)}
 .sec-lbl{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:1px;text-transform:uppercase}
 /* モーダル */
 .mbg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99;display:flex;align-items:flex-start;justify-content:center;padding-top:40px;overflow-y:auto}
@@ -354,7 +365,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
     <div class="mk-header-sub" id="hdr-sub">Mario Kart World Lounge &nbsp;·&nbsp; 24人 VS &nbsp;·&nbsp; 12 Race</div>
   </div>
   <div class="mk-header-badge">
-    <div class="mk-header-badge-item">VS 24</div>
+    <div class="mk-header-badge-item" id="vs-mode-badge">VS 24</div>
     <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:800;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font-mk);letter-spacing:1px;margin-top:4px">EN</button>
   </div>
 </div>
@@ -362,7 +373,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 <div class="tabs">
   <button class="tab on" id="tab-btn-session" onclick="switchTab('session')">🏁 <span data-i18n="tab_session">試合入力</span></button>
   <button class="tab" id="tab-btn-matches" onclick="switchTab('matches')">📋 <span data-i18n="tab_matches">試合履歴</span></button>
-  <button class="tab" id="tab-btn-ranking" onclick="switchTab('ranking')">🏅 <span data-i18n="tab_ranking">ランキング</span></button>
+  <button class="tab" id="tab-btn-ranking" onclick="switchTab('ranking')">🗺 <span data-i18n="tab_ranking">コース戦績</span></button>
   <button class="tab" id="tab-btn-tier" onclick="switchTab('tier')">🎯 Tier</button>
   <button class="tab" id="tab-btn-help" onclick="switchTab('help')">❓ <span data-i18n="tab_help">使い方</span></button>
 </div>
@@ -397,22 +408,30 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
       <span>最終同期: <span id="drive-last-sync" style="color:var(--text)">—</span></span>
     </div>
   </div>
-  <div class="sec-lbl" style="margin-bottom:12px">試合履歴（最新順）</div>
+  <div id="matches-vs-toggle"></div>
+  <div class="sec-lbl" style="margin-bottom:12px" id="matches-title-lbl">試合履歴（最新順）</div>
   <div id="match-list"></div>
 </div>
 <div id="tab-ranking" style="display:none">
+  <div id="ranking-vs-toggle"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-    <div class="sec-lbl">コース別ランキング</div>
+    <div class="sec-lbl" id="ranking-title-lbl">コース戦績</div>
     <div class="sort-bar" style="margin-bottom:0">
       <button class="sort-btn on" onclick="setSort('avg')">平均順位</button>
       <button class="sort-btn" onclick="setSort('rate')">入賞率</button>
       <button class="sort-btn" onclick="setSort('tries')">試行回数</button>
     </div>
   </div>
+  <div class="filter-bar">
+    <label for="min-tries-input">最低試行回数</label>
+    <input class="filter-input" type="number" id="min-tries-input" min="0" value="0" oninput="onMinTriesChange(this.value)">
+    <span style="font-size:11px;color:var(--text3)">回以上のコースを表示</span>
+  </div>
   <div id="rank-list"></div>
 </div>
 
 <div id="tab-tier" style="display:none">
+  <div id="tier-vs-toggle"></div>
   <div id="tier-analysis"></div>
 </div>
 <div id="tab-help" style="display:none">
@@ -479,8 +498,17 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   </div>
 </div>
 <script>
-const RANK_PTS={1:15,2:12,3:10,4:9,5:9,6:8,7:8,8:7,9:7,10:6,11:6,12:6,13:5,14:5,15:5,16:4,17:4,18:4,19:3,20:3,21:3,22:2,23:2,24:1};
-function pts(rank){return RANK_PTS[rank]||1;}
+const RANK_PTS_24={1:15,2:12,3:10,4:9,5:9,6:8,7:8,8:7,9:7,10:6,11:6,12:6,13:5,14:5,15:5,16:4,17:4,18:4,19:3,20:3,21:3,22:2,23:2,24:1};
+const RANK_PTS_12={1:15,2:12,3:10,4:9,5:9,6:8,7:8,8:7,9:7,10:6,11:6,12:1};
+// vsMode: '24p' or '12p'
+let vsMode='24p';
+function pts(rank,mode){
+  var m=mode||vsMode;
+  if(m==='12p') return RANK_PTS_12[rank]||1;
+  return RANK_PTS_24[rank]||1;
+}
+// 後方互換: 既存 RANK_PTS 参照
+const RANK_PTS=RANK_PTS_24;
 let topN=12; // 入賞基準順位（変更可能）
 const CUPS=[
   {name:'キノコカップ',nameEn:'Mushroom Cup',courses:[
@@ -814,13 +842,24 @@ function thumbHtml(c,cls='cthumb',phCls='cthumb-ph'){
 }
 
 function renderMetrics(){
-  const allRecs=Object.values(courseRecords).flat();
+  // モードフィルタ
+  var modeMatches=matchHistory.filter(function(m){return (m.mode||'24p')===vsMode;});
+  // モード対応の courseRecords を疑似的に生成して集計
+  var modeRecs={};
+  getAllCourses().forEach(function(c){modeRecs[c.id]=[];});
+  modeMatches.forEach(function(m){
+    m.races.forEach(function(r){
+      if(!modeRecs[r.courseId])modeRecs[r.courseId]=[];
+      modeRecs[r.courseId].push({rank:r.rank});
+    });
+  });
+  const allRecs=Object.values(modeRecs).flat();
   const total=allRecs.length,topHalf=allRecs.filter(r=>r.rank<=topN).length;
   const topRate=total?Math.round(topHalf/total*100):0;
-  const avgs=Object.values(courseRecords).filter(r=>r.length>0).map(r=>r.reduce((s,x)=>s+x.rank,0)/r.length);
+  const avgs=Object.values(modeRecs).filter(r=>r.length>0).map(r=>r.reduce((s,x)=>s+x.rank,0)/r.length);
   const overallAvg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'--';
-  const tm=matchHistory.length;
-  const avgPts=tm?(matchHistory.reduce((s,m)=>s+m.totalPts,0)/tm).toFixed(1):'--';
+  const tm=modeMatches.length;
+  const avgPts=tm?(modeMatches.reduce((s,m)=>s+m.totalPts,0)/tm).toFixed(1):'--';
   document.getElementById('metrics').innerHTML=''
     +'<div class="mc"><div class="mc-lbl">'+t('metrics_matches')+'</div><div class="mc-val">'+tm+'</div><div class="mc-sub">'+t('metrics_recorded')+'</div></div>'
     +'<div class="mc"><div class="mc-lbl">'+t('metrics_avg_pts')+'</div><div class="mc-val">'+avgPts+'</div><div class="mc-sub">'+t('metrics_per_match')+'</div></div>'
@@ -921,7 +960,8 @@ function renderSession(){
     // 道モードバー
     var fromC=roadFrom?getAllCourses().find(c=>c.id===roadFrom):null;
     var toC=roadTo?getAllCourses().find(c=>c.id===roadTo):null;
-    var roadModeBar='<div class="road-mode-bar">'
+    var roadModeBar=vsMode==='12p'?'':
+    '<div class="road-mode-bar">'
       +'<button class="road-mode-btn'+(roadMode?' on':'')+'" onclick="toggleRoadMode()">'+t('road_mode')+'</button>'
       +(roadMode
         ?('<span class="road-mode-step">'
@@ -934,7 +974,8 @@ function renderSession(){
       +'</div>';
 
     let rankGridHtml='';
-    for(let r=1;r<=24;r++){
+    var _maxRank=vsMode==='12p'?12:24;
+    for(let r=1;r<=_maxRank;r++){
       const cls=r<=3?'top3':r<=topN?'top12':'';
       var rSel=selRank===r?' rk-sel':'';
       rankGridHtml+='<button class="rank-btn '+cls+rSel+'" onclick="pickRank('+r+')">'+r+'</button>';
@@ -998,7 +1039,7 @@ function renderSession(){
     +'<textarea id="session-memo" rows="2" style="width:100%;font-size:12px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);resize:vertical;font-family:var(--font);outline:none" placeholder="'+t('session_memo_ph')+'" oninput="session.memo=this.value">'+(session.memo||'')+'</textarea></div>';
   var cancelBtn='<button class="reset-btn" onclick="cancelSession()"'+(done===0?' disabled style="opacity:.35;cursor:default"':'')+'>'+t('session_reset')+'</button>';
 
-  document.getElementById('session-area').innerHTML=''
+  document.getElementById('session-area').innerHTML=buildVsToggle()
     +'<div class="session-panel">'
     +'<div class="session-hdr">'
     +'<div><div class="session-title">'+t('session_title')+'</div><div class="session-prog">'+done+' / 12 '+t('session_prog')+'</div></div>'
@@ -1112,11 +1153,11 @@ function addRace(){
 function deleteRace(idx){session.races.splice(idx,1);selCourseId=null;selRank=null;tempRoad=null;selEditRaceIdx=null;renderSession();autoSave();}
 function finishSession(){
   if(session.races.length!==12){alert(lang==='en'?'Please enter 12 races.':'12レース分の入力が必要です');return;}
-  const totalPts=session.races.reduce((s,r)=>s+pts(r.rank),0);
-  const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart,memo:session.memo||'',topN};
+  const totalPts=session.races.reduce((s,r)=>s+pts(r.rank,vsMode),0);
+  const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart,memo:session.memo||'',topN,mode:vsMode};
   matchHistory.unshift(match);
   var _matchTier = selTier || '';
-  session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,tier:_matchTier});});
+  session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,tier:_matchTier,mode:vsMode});});
   session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
   selCourseId=null;selRank=null;selTier=null;tempRoad=null;
   autoSave();renderMetrics();renderSession();
@@ -1147,7 +1188,8 @@ function renderCourseGrid(){
     html+='</div>';
     html+='</div>';
   });
-  document.getElementById('courses-accordion').innerHTML=html;
+  var _ca=document.getElementById('courses-accordion');
+  if(_ca)_ca.innerHTML=html;
 }
 function selectCourse(id){
   // 同じコースをクリックしたら閉じる
@@ -1189,10 +1231,16 @@ function selectCourse(id){
   };
 }
 
-function buildDetailHTML(id){
+function buildDetailHTML(id, modeFilter){
   var c=getAllCourses().find(function(x){return x.id===id;});
   if(!c)return'';
-  var recs=courseRecords[id]||[];
+  var allRecs=courseRecords[id]||[];
+  var recs=modeFilter?allRecs.filter(function(r){
+    if(r.mode)return r.mode===modeFilter;
+    var pm=matchHistory.find(function(m){return m.date===r.date&&m.tier===r.tier&&m.races.some(function(mr){return mr.courseId===id&&mr.rank===r.rank;});});
+    if(pm)return (pm.mode||'24p')===modeFilter;
+    return modeFilter==='24p';
+  }):allRecs;
   var s=stats(recs);
   var iconHtml;
   if(c.isRoad){
@@ -1257,11 +1305,16 @@ function delCourseRec(cid,idx){
   autoSave();
 }
 function renderMatches(){
+  // vsToggle を更新
+  var mvt=document.getElementById('matches-vs-toggle');
+  if(mvt)mvt.innerHTML=buildVsToggle();
   // Drive 同期パネルを最新状態で描画
   if(typeof gdrive_updateUI === 'function') gdrive_updateUI();
-  if(!matchHistory.length){document.getElementById('match-list').innerHTML=(lang==='en'?'<div class="empty">No matches recorded yet.</div>':'<div class="empty">まだ試合の記録がありません</div>');return;}
-  var maxPts=Math.max.apply(null,matchHistory.map(function(m){return m.totalPts;}));
-  document.getElementById('match-list').innerHTML=matchHistory.map(function(m,i){
+  // モードフィルタ: 現在の vsMode と一致する試合のみ表示（旧データ=24p扱い）
+  var filteredHistory=matchHistory.filter(function(m){return (m.mode||'24p')===vsMode;});
+  if(!filteredHistory.length){document.getElementById('match-list').innerHTML=(lang==='en'?'<div class="empty">No '+vsMode+' matches recorded yet.</div>':'<div class="empty">'+vsMode+'の試合記録がありません</div>');return;}
+  var maxPts=Math.max.apply(null,filteredHistory.map(function(m){return m.totalPts;}));
+  document.getElementById('match-list').innerHTML=filteredHistory.map(function(m,i){
     var ptsClass=m.totalPts>=maxPts*0.75?'pts-high':m.totalPts>=maxPts*0.5?'pts-mid':'pts-low';
     var isExp=expandedMatch===m.id;
     var memoLine=m.memo?('<div style="font-size:11px;color:var(--text2);padding:6px 10px;background:var(--bg2);border-radius:6px;margin-top:6px;border-left:2px solid var(--border2)">📝 '+m.memo+'</div>'):'';
@@ -1273,7 +1326,7 @@ function renderMatches(){
           +'<span style="width:24px;font-weight:700;font-family:var(--font-mk)">'+(ri+1)+'</span>'
           +'<span style="flex:1;display:flex;align-items:center;gap:4px">'+(c?thumbMini(c)+' '+cN(c):(lang=='en'?'Unknown':'不明'))+'</span>'
           +rankPill(r.rank)
-          +'<span style="width:40px;text-align:right;color:var(--yellow);font-weight:700">+'+pts(r.rank)+'pt</span>'
+          +'<span style="width:40px;text-align:right;color:var(--yellow);font-weight:700">+'+pts(r.rank,m.mode||vsMode)+'pt</span>'
           +'</div>';
       }).join('');
       detailHtml='<div class="match-detail">'+raceRows+'</div>';
@@ -1292,7 +1345,7 @@ function renderMatches(){
     return '<div class="match-card" onclick="toggleMatch('+m.id+')">'
       +'<div class="match-hdr">'
       +'<div class="match-hdr-left" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
-      +'<span class="match-no">'+(lang==="en"?"Match #":"試合 #")+(matchHistory.length-i)+"</span>"
+      +'<span class="match-no">'+(lang==="en"?"Match #":"試合 #")+(filteredHistory.length-i)+"</span>"
       +tierBadge
       +'<span style="font-size:11px;color:var(--text3)">'+m.date+'</span>'
       +'</div>'
@@ -1307,10 +1360,37 @@ function renderMatches(){
   }).join('');
 }
 function toggleMatch(id){expandedMatch=expandedMatch===id?null:id;renderMatches();}
-// ランキング展開中コースID
+// ランキング展開中コースID / 試行回数フィルタ
 var selRankCourse=null;
+var minTries=0;
+function onMinTriesChange(val){
+  minTries=Math.max(0,parseInt(val)||0);
+  selRankCourse=null;
+  renderRanking();
+}
 function renderRanking(){
-  var items=getAllCourses().map(function(c){return {c:c,s:stats(courseRecords[c.id]||[])};}).filter(function(x){return x.s;});
+  // vsToggle を更新
+  var rvt=document.getElementById('ranking-vs-toggle');
+  if(rvt)rvt.innerHTML=buildVsToggle();
+  // minTries input を同期
+  var mti=document.getElementById('min-tries-input');
+  if(mti&&parseInt(mti.value)!==minTries)mti.value=minTries;
+  // モードフィルタ: vsMode に対応する courseRecords のみ集計
+  function getModeRecs(cid){
+    var allRecs=courseRecords[cid]||[];
+    return allRecs.filter(function(r){
+      // tier フィールドから対応試合を逆引き — rec.mode を持つ場合はそれを使用
+      if(r.mode)return r.mode===vsMode;
+      // 旧データ: mode なし → 該当試合の mode を matchHistory から引く
+      var parentMatch=matchHistory.find(function(m){
+        return m.date===r.date&&m.tier===r.tier&&m.races.some(function(mr){return mr.courseId===cid&&mr.rank===r.rank;});
+      });
+      if(parentMatch)return (parentMatch.mode||'24p')===vsMode;
+      return vsMode==='24p'; // 旧データ fallback
+    });
+  }
+  function getModeStats(cid){return stats(getModeRecs(cid));}
+  var items=getAllCourses().map(function(c){return {c:c,s:getModeStats(c.id),recs:getModeRecs(c.id)};}).filter(function(x){return x.s&&x.s.tries>=minTries;});
   if(sortMode==='avg')items.sort(function(a,b){return a.s.avg-b.s.avg;});
   if(sortMode==='rate')items.sort(function(a,b){return b.s.rate-a.s.rate;});
   if(sortMode==='tries')items.sort(function(a,b){return b.s.tries-a.s.tries;});
@@ -1327,7 +1407,7 @@ function renderRanking(){
     var color=medalColors[i]||'var(--text)';
     var isOpen=selRankCourse===item.c.id;
     var thumbHtml=item.c.isRoad?roadThumbInlineHtml(item.c,48,26,'4px'):('<img src="'+(courseImages[item.c.id]||defaultImgPath(item.c))+'" style="width:48px;height:26px;object-fit:cover;border-radius:4px;display:block" alt="'+cN(item.c)+'">');
-    var detailHtml=isOpen?buildDetailHTML(item.c.id):'';
+    var detailHtml=isOpen?buildDetailHTML(item.c.id,vsMode):'';
     return '<div class="rnk-wrap">'
       +'<div class="rnk-row" data-rnk-course="'+item.c.id+'">'
       +'<div style="font-size:16px;width:28px;text-align:center;flex-shrink:0">'+medal+'</div>'
@@ -1365,7 +1445,7 @@ function setSort(mode){
   document.querySelectorAll('.sort-btn').forEach(function(btn,i){btn.classList.toggle('on',['avg','rate','tries'][i]===mode);});
   renderRanking();
 }
-function renderChart(){
+function renderChart(){if(!document.getElementById('chart-avg'))return; // tab removed
   var el=document.getElementById('chart-rate-title');
   if(el)el.textContent=lang==='en'?(topN+t('chart_rate_title')):(topN+'位以上入賞率（%）');
   var items=getAllCourses().map(function(c){return {c:c,s:stats(courseRecords[c.id]||[])};}).filter(function(x){return x.s;});
@@ -1422,7 +1502,7 @@ let lang='ja';
 const I18N={
   ja:{
     tab_session:'試合入力', tab_courses:'コース戦績', tab_matches:'試合履歴',
-    tab_ranking:'ランキング', tab_chart:'グラフ', tab_help:'使い方',
+    tab_ranking:'コース戦績', tab_chart:'グラフ', tab_help:'使い方',
     hdr_sub:'Mario Kart World Lounge &nbsp;·&nbsp; 24人 VS &nbsp;·&nbsp; 12 Race',
     metrics_matches:'試合数', metrics_avg_pts:'平均得点', metrics_avg_rank:'総合 平均順位',
     metrics_top_rate:'位以上入賞率', metrics_recorded:'記録済み',
@@ -1445,7 +1525,7 @@ const I18N={
     dup_warn:'⚠ このコースは既に記録されています。このまま追加されます。',
     courses_title:'コース戦績', courses_add_road:'＋ 道を追加',
     matches_title:'試合履歴（最新順）',
-    ranking_title:'コース別ランキング',
+    ranking_title:'コース戦績',
     sort_avg:'平均順位が良い順', sort_rate:'入賞率が高い順', sort_tries:'試行回数が多い順',
     chart_avg_title:'平均順位（低いほど良い）',
     chart_rate_title:'位以上入賞率（%）',
@@ -1462,7 +1542,7 @@ const I18N={
   },
   en:{
     tab_session:'Match Input', tab_courses:'Track Records', tab_matches:'Match History',
-    tab_ranking:'Ranking', tab_chart:'Charts', tab_help:'Help',
+    tab_ranking:'Track Records', tab_chart:'Charts', tab_help:'Help',
     hdr_sub:'Mario Kart World Lounge &nbsp;·&nbsp; 24P VS &nbsp;·&nbsp; 12 Race',
     metrics_matches:'Matches', metrics_avg_pts:'Avg Score', metrics_avg_rank:'Overall Avg Rank',
     metrics_top_rate:'th+ Rate', metrics_recorded:'recorded',
@@ -1485,7 +1565,7 @@ const I18N={
     dup_warn:'⚠ Already recorded. Will be added again.',
     courses_title:'Track Records', courses_add_road:'＋ Add Intermission',
     matches_title:'Match History (latest first)',
-    ranking_title:'Track Ranking',
+    ranking_title:'Track Records',
     sort_avg:'Best Avg Rank', sort_rate:'Highest Win Rate', sort_tries:'Most Attempts',
     chart_avg_title:'Average Rank (lower = better)',
     chart_rate_title:'th+ Win Rate (%)',
@@ -1585,7 +1665,7 @@ function renderHelp(){
 <li>The road is pre-selected automatically — just pick a rank</li>
 </ol>
 <p>If the same From→To road already exists it will be reused.</p>`},
-    {icon:'🗺',title:'Course Records (in Ranking)',body:`<p>The Ranking tab integrates course rankings with detailed stats. Tap a course row to expand average rank, win rate, attempts, and race history. Switch sort order between Average Rank, Win Rate, or Attempts.</p>`},
+    {icon:'🗺',title:'Track Records',body:`<p>Shows records for the active mode (12P/24P). Tap a course to expand stats and history. Use the minimum attempts filter to narrow results. Sort by Average Rank, Win Rate, or Attempts.</p>`},
     {icon:'📋',title:'Match History',body:`<p>All matches newest-first. Tap a card to expand race details. Tap <strong>💾</strong> on a match to export that single match as a JSON file. Tap <strong>✏️ Edit</strong> to change rank, character, kart, tier, date or note. <strong>Delete Match</strong> is permanent.</p>`},
     {icon:'🏅',title:'Ranking',body:`<p>Sort courses by best average rank, highest win rate, or most attempts.</p>`},
 
@@ -1613,7 +1693,7 @@ function renderHelp(){
 <li>作成した道が自動選択状態になるので、あとは順位を選ぶだけ</li>
 </ol>
 <p>同じ始点→終点の道が既に存在する場合は既存の道が再利用されます。</p>`},
-    {icon:'🗺',title:'コース戦績（ランキング内）',body:`<p>ランキングタブにコース別ランキングとコース戦績を統合。コース名をタップするとその下に平均順位・入賞率・試行回数・レース履歴が展開されます。ソート順は「平均順位」「入賞率」「試行回数」で切り替え可能です。</p>`},
+    {icon:'🗺',title:'コース戦績',body:`<p>現在のモード（12P/24P）に対応した記録のみを表示。コース名をタップすると統計・履歴が展開されます。「最低試行回数」でコースを絞り込み可能。ソート順は「平均順位」「入賞率」「試行回数」で切り替えられます。</p>`},
     {icon:'📋',title:'試合履歴',body:`<p>全試合を新しい順で表示。カードをタップして詳細を展開。各試合カードの<strong>💾</strong>ボタンで、その1試合だけをJSONファイルに書き出せます。<strong>✏️ 訂正</strong>で順位・キャラ・マシン・Tier・日付・メモを変更できます。<strong>試合を削除</strong>は取り消し不可です。</p>`},
     {icon:'🏅',title:'ランキング',body:`<p>コースを「平均順位が良い順」「入賞率が高い順」「試行回数が多い順」で並び替えて表示します。道中コースも含みます。</p>`},
 
@@ -1634,6 +1714,47 @@ function renderHelp(){
     +'</div>';
 }
 
+function switchVsMode(mode){
+  if(vsMode===mode)return;
+  vsMode=mode;
+  // 試合入力のリセット（レース記録はモードをまたいで継続しない）
+  // ※ 記録中の試合があれば確認
+  if(session.races.length>0){
+    if(!confirm(lang==='en'?'Switch mode? Current session will be reset.':'モードを切り替えます。入力中の試合はリセットされます。'))return;
+    session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
+    selCourseId=null;selRank=null;selTier=null;roadMode=false;roadFrom=null;roadTo=null;tempRoad=null;selEditRaceIdx=null;
+  }
+  // ヘッダーバッジ更新
+  var badge=document.querySelector('.mk-header-badge-item');
+  if(badge)badge.textContent='VS '+(vsMode==='12p'?'12':'24');
+  // モードバー全更新
+  document.querySelectorAll('.vs-btn').forEach(function(b){
+    var isThis=b.getAttribute('data-vsmode')===vsMode;
+    b.classList.toggle('vs-sel',isThis);
+    b.classList.toggle('vs-12',isThis&&vsMode==='12p');
+  });
+  selRankCourse=null;
+  minTries=0;
+  var _mti=document.getElementById('min-tries-input');
+  if(_mti)_mti.value=0;
+  autoSave();
+  // 表示中タブを再描画
+  renderMetrics();renderSession();
+  var tabs=['session','matches','ranking','tier','help'];
+  var visibleTab=tabs.find(function(t){var el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
+  if(visibleTab==='matches')renderMatches();
+  if(visibleTab==='ranking')renderRanking();
+  if(visibleTab==='tier')renderTierAnalysis();
+}
+function buildVsToggle(){
+  var sel24=vsMode==='24p';
+  var sel12=vsMode==='12p';
+  return '<div class="vs-toggle-bar">'
+    +'<span class="vs-toggle-lbl">MODE</span>'
+    +'<button class="vs-btn'+(sel24?' vs-sel':'')+'" data-vsmode="24p">24P</button>'
+    +'<button class="vs-btn'+(sel12?' vs-sel vs-12':'')+'" data-vsmode="12p">12P</button>'
+    +'</div>';
+}
 function switchTab(tab){
   var tabs=['session','matches','ranking','tier','help'];
   tabs.forEach(function(tabName){var el=document.getElementById('tab-'+tabName);if(el)el.style.display=tabName===tab?'':'none';});
@@ -1900,7 +2021,7 @@ function rebuildCourseRecords(){
   matchHistory.slice().reverse().forEach(function(m){
     m.races.forEach(function(r){
       if(!emptyRecs[r.courseId])emptyRecs[r.courseId]=[];
-      emptyRecs[r.courseId].push({rank:r.rank,date:m.date,tier:m.tier||''});
+      emptyRecs[r.courseId].push({rank:r.rank,date:m.date,tier:m.tier||'',mode:m.mode||'24p'});
     });
   });
   courseRecords=emptyRecs;
@@ -1908,11 +2029,16 @@ function rebuildCourseRecords(){
 
 // ===== Tier Analysis =====
 function renderTierAnalysis(){
+  // vsToggle を更新
+  var tvt=document.getElementById('tier-vs-toggle');
+  if(tvt)tvt.innerHTML=buildVsToggle();
   var el=document.getElementById('tier-analysis');
+  // モードフィルタ
+  var modeMatches=matchHistory.filter(function(m){return (m.mode||'24p')===vsMode;});
   // Group matches by tier
   var tierData={};
   TIERS.forEach(function(tier){tierData[tier]=[];});
-  matchHistory.forEach(function(m){
+  modeMatches.forEach(function(m){
     if(m.tier&&tierData[m.tier]){
       tierData[m.tier].push(m);
     }
@@ -1999,9 +2125,18 @@ document.addEventListener('DOMContentLoaded', function(){
     if(cpCard){pickCourse(cpCard.getAttribute('data-pick-course'));return;}
   });
 
+  // vsMode トグル（イベント委任 — innerHTML で生成されるためdocumentレベルで捕捉）
+  document.addEventListener('click',function(e){
+    var vsBtn=e.target.closest('[data-vsmode]');
+    if(vsBtn){switchVsMode(vsBtn.getAttribute('data-vsmode'));return;}
+  });
+
   // 初期描画
   autoLoad();
   applyI18n();
+  // vsMode 初期状態をバッジに反映
+  var _badge=document.getElementById('vs-mode-badge');
+  if(_badge)_badge.textContent='VS '+(vsMode==='12p'?'12':'24');
   renderMetrics();
   renderSession();
 });
@@ -2029,6 +2164,7 @@ function autoSave(){
       roadFrom:roadFrom,
       roadTo:roadTo,
       lang:lang,
+      vsMode:vsMode,
       courseMemos:typeof courseMemos!=='undefined'?courseMemos:{},
       _savedAt:new Date().toISOString(),  // Drive との新旧判定に使用
     };
@@ -2090,6 +2226,7 @@ function autoLoad(){
     if(data.roadFrom)roadFrom=data.roadFrom;
     if(data.roadTo)roadTo=data.roadTo;
     if(data.lang){lang=data.lang;document.getElementById('lang-toggle').textContent=lang==='ja'?'EN':'JA';}
+    if(data.vsMode)vsMode=data.vsMode;
   }catch(e){}
 }
 
