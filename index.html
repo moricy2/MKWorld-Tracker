@@ -974,8 +974,7 @@ function renderSession(){
         ?('<span class="road-mode-step">'
           +'<span class="road-sel-from'+(fromC?' filled':'')+'">'+t('road_from')+' '+(fromC?'<img class="road-sel-img" src="'+(courseImages[fromC.id]||defaultImgPath(fromC))+'" alt="'+cN(fromC)+'">&nbsp;'+cN(fromC):t('road_unsel'))+'</span>'
           +' → '
-          +'<span class="road-sel-to'+(toC?' filled':'')+'">'+t('road_to')+' '+(toC?'<img class="road-sel-img" src="'+(courseImages[toC.id]||defaultImgPath(toC))+'" alt="'+cN(toC)+'">&nbsp;'+cN(toC):t('road_unsel'))+'</span>'
-          +(fromC&&toC?(' <button class="add-race-btn" style="width:auto;margin:0;padding:5px 14px;font-size:12px" onclick="commitRoad()">'+t('road_add_btn')+'</button>'):'')
+          +'<span class="road-sel-to">'+t('road_to')+' '+t('road_unsel')+'</span>'
           +'</span>')
         :('<span style="font-size:11px;color:var(--text3)">'+t('road_off_hint')+'</span>'))
       +'</div>';
@@ -1086,14 +1085,12 @@ function commitRoad(){
   if(exists){
     roadObj=exists;
   } else {
-    // 命名規則: 始点の頭4文字→終点の頭4文字
+    // 命名規則: 始点略称→終点略称（自動命名、ダイアログなし）
     var fromShort=cShort(fromC);
     var toShort=cShort(toC);
     var autoName=fromShort+'→'+toShort;
-    var promptMsg=lang==='en'?'Intermission name (optional):':'道の名前（省略可）:';
-    var name=prompt(promptMsg,autoName)||autoName;
     var id='road_'+roadFrom+'_'+roadTo+'_'+Date.now();
-    roadObj={id:id,name:name,nameEn:name,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
+    roadObj={id:id,name:autoName,nameEn:autoName,emoji:'',color:'#9FE1CB',isRoad:true,cup:'道',cupEn:'Intermission',fromId:roadFrom,toId:roadTo,fromName:fromC.name,toName:toC.name};
     customRoads.push(roadObj);
     courseRecords[id]=[];
   }
@@ -1116,7 +1113,9 @@ function pickCourse(id){
       var allowed=ROAD_CONNECTIONS[roadFrom]||[];
       if(allowed.length>0&&!allowed.includes(id))return;
       roadTo=id;
-      renderSession();
+      // 終点選択後、即座に道を確定して順位入力へ移行
+      commitRoad();
+      return;
     } else {
       // 両方選択済み → 再選択
       roadFrom=id;roadTo=null;
@@ -1270,7 +1269,6 @@ function buildDetailHTML(id, modeFilter){
       +'<div class="h-num">'+(recs.length-i)+'</div>'
       +rankPill(r.rank)
       +'<div class="h-date">'+r.date+(r.tier?' — <span class="tier-badge tier-'+r.tier+'" style="font-size:9px;padding:1px 6px">'+r.tier+'</span>':'')+'</div>'
-      +'<button class="del-btn" data-del-rec="'+(recs.length-1-i)+'" data-del-course="'+id+'">✕</button>'
       +'</div>';
   }).join(''):('<div class="empty">'+(lang==="en"?'No data yet':'まだ記録がありません')+'</div>');
   var roadInfo=c.isRoad
@@ -1295,8 +1293,9 @@ function buildDetailHTML(id, modeFilter){
   }
   return '<div class="detail anim-slide">'
     +'<div class="d-hdr">'+iconHtml
-    +'<div><div class="d-name">'+cN(c)+'</div><div class="d-cup">'+(lang=='en'&&c.cupEn?c.cupEn:c.cup)+'</div></div>'
+    +'<div style="flex:1;min-width:0"><div class="d-name">'+cN(c)+'</div><div class="d-cup">'+(lang=='en'&&c.cupEn?c.cupEn:c.cup)+'</div></div>'
     +'</div>'
+    +buildCourseEditFields(c)
     +roadInfo
     +statsHtml
     +(lang==='en'?'<div class="sec-lbl" style="margin-bottom:8px">Race History</div>':'<div class="sec-lbl" style="margin-bottom:8px">レース履歴</div>')
@@ -1503,6 +1502,53 @@ function deleteRoad(id){
   selCourse=null;selRankCourse=null;renderMetrics();
   if(typeof renderRanking==='function')renderRanking();
   autoSave();
+}
+
+// ===== コース名・略称編集UI =====
+function buildCourseEditFields(c){
+  var isRoad=c.isRoad;
+  var ab=COURSE_ABBR[c.id];
+  // 道中コース: 名前のみ編集可、略称なし
+  // ベースコース: 名前(JA)と略称(shortJa)を編集可
+  var nameVal=c.name||'';
+  var shortVal=ab?ab.shortJa:'';
+  var html='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;margin-bottom:10px">'
+    +'<div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">'
+    +(lang==='en'?'Edit Names':'名前を編集')+'</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px">'
+    +'<div style="display:flex;align-items:center;gap:6px">'
+    +'<label style="font-size:10px;color:var(--text2);font-weight:700;width:52px;flex-shrink:0">'+(lang==='en'?'Name':'コース名')+'</label>'
+    +'<input id="cedit-name-'+c.id+'" type="text" value="'+nameVal.replace(/"/g,'&quot;')+'" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:var(--font)">'
+    +'</div>'
+    +((!isRoad&&ab)?('<div style="display:flex;align-items:center;gap:6px">'
+    +'<label style="font-size:10px;color:var(--text2);font-weight:700;width:52px;flex-shrink:0">'+(lang==='en'?'Short':'略称')+'</label>'
+    +'<input id="cedit-short-'+c.id+'" type="text" value="'+shortVal.replace(/"/g,'&quot;')+'" style="flex:1;font-size:12px;padding:5px 8px;border:1.5px solid var(--border2);border-radius:6px;background:var(--bg);color:var(--text);font-family:var(--font)" placeholder="例: マリブサ">'
+    +'</div>'):'')
+    +'<button onclick="saveCourseEdits(\''+c.id+'\')" style="align-self:flex-end;padding:5px 14px;font-size:11px;font-weight:800;border-radius:6px;border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font)">'
+    +(lang==='en'?'Save':'保存')+'</button>'
+    +'</div></div>';
+  return html;
+}
+function saveCourseEdits(id){
+  var nameInput=document.getElementById('cedit-name-'+id);
+  var shortInput=document.getElementById('cedit-short-'+id);
+  if(!nameInput)return;
+  var newName=nameInput.value.trim();
+  if(!newName)return;
+  // ベースコース or 道中コースを検索して名前を更新
+  var bc=BASE_COURSES.find(function(x){return x.id===id;});
+  if(bc){bc.name=newName;}
+  var rc=customRoads.find(function(x){return x.id===id;});
+  if(rc){rc.name=newName;rc.nameEn=newName;}
+  // 略称更新（ベースコースのみ）
+  if(shortInput&&COURSE_ABBR[id]){
+    var newShort=shortInput.value.trim();
+    if(newShort)COURSE_ABBR[id].shortJa=newShort;
+  }
+  autoSave();
+  // 現在開いているアコーディオン（ランキングタブ or コース戦績）を再描画
+  if(typeof renderRanking==='function')renderRanking();
+  renderMetrics();renderSession();
 }
 // ===== i18n =====
 let lang='ja';
@@ -1719,8 +1765,6 @@ function renderHelp(){
 <p>If the same From→To road already exists it will be reused.</p>`},
     {icon:'📋',title:'Match History',body:`<p>All matches newest-first. Tap a card to expand race details. Tap <strong>💾</strong> on a match to export that single match as a JSON file. Tap <strong>✏️ Edit</strong> to change rank, character, kart, tier, date or note. <strong>Delete Match</strong> is permanent.</p>`},
     {icon:'🗺',title:'Track Records',body:`<p>Shows records for the active mode (12P/24P). Tap a course to expand stats and history. Use the minimum attempts filter to narrow results. Sort by Average Rank, Win Rate, or Attempts.</p>`},
-    {icon:'🏅',title:'Ranking',body:`<p>Sort courses by best average rank, highest win rate, or most attempts.</p>`},
-
     {icon:'🎯',title:'Tier Analysis',body:`<p>Per-tier breakdown: match count, average score, average rank, win rate, best/worst score, and a sparkline of recent results.</p>`},
     {icon:'💾',title:'Data',body:`<p><strong>Export Data (💾 button at bottom)</strong> — downloads a full JSON backup of all matches and settings.<br><strong>💾 button on each match card</strong> — exports just that one match as a JSON file.<br><strong>Import Data</strong> — restores from a JSON file. Existing .png/.avif image paths are protected and will not be overwritten by old emoji data.<br>Data auto-saves to localStorage on every action.</p><p style="margin-top:8px"><strong>☁️ Cloud Sync (Google Drive)</strong> — Use the sync panel in the Match History tab. Tap <strong>Connect Drive</strong> to sign in, then <strong>⬆️ Save to Cloud</strong> to back up all data or <strong>⬇️ Restore from Cloud</strong> to load. Both 12P and 24P data are saved and restored together.</p>`},
     {icon:'⚙️',title:'Settings',body:`<p><strong>Character / Kart</strong> — tap the panel in Match Input to open the image grid and select.<br><strong>Win Cutoff</strong> — change the placement threshold (default: top 12) via the <em>Change</em> button in the setup panel.<br><strong>Language</strong> — tap EN/JA in the header to toggle.</p>`},
@@ -1747,8 +1791,6 @@ function renderHelp(){
 <p>同じ始点→終点の道が既に存在する場合は既存の道が再利用されます。</p>`},
     {icon:'📋',title:'試合履歴',body:`<p>全試合を新しい順で表示。カードをタップして詳細を展開。各試合カードの<strong>💾</strong>ボタンで、その1試合だけをJSONファイルに書き出せます。<strong>✏️ 訂正</strong>で順位・キャラ・マシン・Tier・日付・メモを変更できます。<strong>試合を削除</strong>は取り消し不可です。</p>`},
     {icon:'🗺',title:'コース戦績',body:`<p>現在のモード（12P/24P）に対応した記録のみを表示。コース名をタップすると統計・履歴が展開されます。「最低試行回数」でコースを絞り込み可能。ソート順は「平均順位」「入賞率」「試行回数」で切り替えられます。</p>`},
-    {icon:'🏅',title:'ランキング',body:`<p>コースを「平均順位が良い順」「入賞率が高い順」「試行回数が多い順」で並び替えて表示します。道中コースも含みます。</p>`},
-
     {icon:'🎯',title:'Tier分析',body:`<p>Tier別に試合数・平均得点・平均順位・入賞率・最高/最低得点・得点推移スパークラインを表示します。</p>`},
     {icon:'💾',title:'データ管理',body:`<p><strong>データを保存（画面下の💾ボタン）</strong> — 全データをJSONでエクスポート。<br><strong>試合カードの💾ボタン</strong> — その1試合だけをJSONファイルに保存。<br><strong>データを読込</strong> — JSONをインポート。既存の.png/.avif画像パスは保護され、旧絵文字データで上書きされません。<br>操作のたびに自動保存されるので、リロードしてもデータは消えません。</p><p style="margin-top:8px"><strong>☁️ クラウド同期（Google Drive）</strong> — 試合履歴タブの同期パネルから利用。<strong>連携を開始</strong>でGoogle アカウントと接続後、<strong>⬆️ クラウドへ保存</strong>で全データをDriveに保存、<strong>⬇️ クラウドから復元</strong>でDriveのデータを読み込めます。12P・24P両モードのデータを一括で保存・復元します。</p>`},
     {icon:'⚙️',title:'設定',body:`<p><strong>キャラ・マシン</strong> — 試合入力パネルのカードをタップすると画像グリッドが開き、選択できます。<br><strong>入賞基準</strong> — セットアップパネルの<em>変更</em>ボタンでデフォルト12位以内を変更できます。<br><strong>言語</strong> — ヘッダーのEN/JAボタンで切り替えられます。</p>`},
@@ -2223,6 +2265,7 @@ function autoSave(){
       lang:lang,
       vsMode:vsMode,
       courseMemos:typeof courseMemos!=='undefined'?courseMemos:{},
+      courseAbbr:COURSE_ABBR,
       _savedAt:new Date().toISOString(),  // Drive との新旧判定に使用
     };
     localStorage.setItem('mkw_tracker',JSON.stringify(payload));
@@ -2284,6 +2327,14 @@ function autoLoad(){
     if(data.roadTo)roadTo=data.roadTo;
     if(data.lang){lang=data.lang;document.getElementById('lang-toggle').textContent=lang==='ja'?'EN':'JA';}
     if(data.vsMode)vsMode=data.vsMode;
+    // 略称カスタマイズを復元
+    if(data.courseAbbr){
+      Object.keys(data.courseAbbr).forEach(function(id){
+        if(COURSE_ABBR[id]&&data.courseAbbr[id].shortJa){
+          COURSE_ABBR[id].shortJa=data.courseAbbr[id].shortJa;
+        }
+      });
+    }
     // モード別localStorage からも読む
     var _sv=localStorage.getItem('mkw_tracker_vsmode');if(_sv)vsMode=_sv;
   }catch(e){}
