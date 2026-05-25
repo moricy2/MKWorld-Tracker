@@ -391,7 +391,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <button class="tab" id="tab-btn-matches" onclick="switchTab('matches')">📋 <span data-i18n="tab_matches">試合履歴</span></button>
   <button class="tab" id="tab-btn-ranking" onclick="switchTab('ranking')">🗺 <span data-i18n="tab_ranking">コース戦績</span></button>
   <button class="tab" id="tab-btn-tier" onclick="switchTab('tier')">🎯 Tier</button>
-  <button class="tab" id="tab-btn-mmr" onclick="switchTab('mmr')">📊 MMR</button>
+  <button class="tab" id="tab-btn-mmr" onclick="switchTab('mmr')">📊 <span data-i18n="tab_stats">Stats</span></button>
   <button class="tab" id="tab-btn-help" onclick="switchTab('help')">❓ <span data-i18n="tab_help">使い方</span></button>
 </div>
 
@@ -470,26 +470,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div id="tier-analysis"></div>
 </div>
 <div id="tab-mmr" style="display:none">
-  <div style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
-    <div id="mmr-panel-title" style="font-family:var(--font-mk);font-size:15px;color:var(--yellow);margin-bottom:.5rem">📊 プレイヤーMMR照会</div>
-    <div id="mmr-panel-desc" style="font-size:11px;color:var(--text2);margin-bottom:12px">MKCentral Lounge のプレイヤー情報を取得します。名前 / Discord ID / MKC ID で検索できます。</div>
-    <div id="mmr-mode-toggle"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-      <input id="mmr-name-input" type="text" placeholder="プレイヤー名 / Discord ID / MKC ID" data-i18n-ph="mmr_placeholder"
-        style="flex:1;min-width:180px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font);outline:none"
-        onkeydown="if(event.key==='Enter')fetchMmrData()">
-      <div style="display:flex;align-items:center;gap:6px">
-        <label id="mmr-season-label" style="font-size:11px;color:var(--text2);white-space:nowrap">シーズン</label>
-        <input id="mmr-season-input" type="number" value="2" min="1" max="99"
-          style="width:56px;font-size:13px;padding:6px 8px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font);outline:none;text-align:center">
-      </div>
-      <button id="mmr-search-btn" onclick="fetchMmrData()"
-        style="padding:8px 20px;font-size:13px;font-weight:800;border-radius:var(--radius);border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font-mk);white-space:nowrap">
-        検索
-      </button>
-    </div>
-    <div id="mmr-panel-note" style="font-size:10px;color:var(--text3)">※ MKCentral Lounge API を直接参照します。ブラウザのCORSポリシーにより接続できない場合があります。</div>
-  </div>
+  <div id="mmr-vs-toggle"></div>
   <div id="mmr-result"></div>
 </div>
 <div id="tab-help" style="display:none">
@@ -547,6 +528,8 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
     <input type="text" id="edit-memo" placeholder="メモ（任意）"></div>
     <div class="fr"><label class="fl" id="edit-tier-label">Tier</label>
     <div class="tier-picker" id="edit-tier-picker"></div></div>
+    <div class="fr"><label class="fl" id="edit-format-label">人数形式</label>
+    <div class="tier-picker" id="edit-format-picker"></div></div>
     <div class="fr"><label class="fl" id="edit-date-label">日付</label><input type="date" id="edit-date"></div>
     <div class="mact">
       <button class="bc" onclick="closeM('modal-edit')">キャンセル</button>
@@ -1693,7 +1676,7 @@ let lang='ja';
 const I18N={
   ja:{
     tab_session:'試合入力', tab_courses:'コース戦績', tab_matches:'試合履歴',
-    tab_ranking:'コース戦績', tab_chart:'グラフ', tab_help:'使い方',
+    tab_ranking:'コース戦績', tab_chart:'グラフ', tab_help:'使い方', tab_stats:'Stats',
     hdr_sub:'Mario Kart World Lounge Tracker',
     metrics_matches:'試合数', metrics_avg_pts:'平均得点', metrics_avg_rank:'総合 平均順位',
     metrics_top_rate:'位以上入賞率', metrics_recorded:'記録済み',
@@ -1725,7 +1708,7 @@ const I18N={
     edit_note:'コース・順位・キャラ・マシン・Tier・日付を変更できます。変更後「保存」してください。',
     edit_char:'キャラクター', edit_kart:'マシン',
     edit_memo_label:'試合メモ', edit_tier_label:'Tier', edit_date_label:'日付',
-    edit_cancel:'キャンセル', edit_delete:'試合を削除', edit_save:'保存',
+    edit_cancel:'キャンセル', edit_delete:'試合を削除', edit_save:'保存', edit_format_label:'人数形式',
     btn_save_data:'💾 データを保存', btn_load_data:'📂 データを読込',
     char_label:'キャラクター', kart_label:'カート',
     top_n_label:'入賞基準:', top_n_btn:'変更',
@@ -1761,7 +1744,7 @@ const I18N={
   },
   en:{
     tab_session:'Match Input', tab_courses:'Track Records', tab_matches:'Match History',
-    tab_ranking:'Track Records', tab_chart:'Charts', tab_help:'Help',
+    tab_ranking:'Track Records', tab_chart:'Charts', tab_help:'Help', tab_stats:'Stats',
     hdr_sub:'Mario Kart World Lounge Tracker',
     metrics_matches:'Matches', metrics_avg_pts:'Avg Score', metrics_avg_rank:'Overall Avg Rank',
     metrics_top_rate:'th+ Rate', metrics_recorded:'recorded',
@@ -1793,7 +1776,7 @@ const I18N={
     edit_note:'Edit course, rank, character, kart, tier or date, then save.',
     edit_char:'Character', edit_kart:'Kart',
     edit_memo_label:'Note', edit_tier_label:'Tier', edit_date_label:'Date',
-    edit_cancel:'Cancel', edit_delete:'Delete Match', edit_save:'Save',
+    edit_cancel:'Cancel', edit_delete:'Delete Match', edit_save:'Save', edit_format_label:'Format',
     btn_save_data:'💾 Export Data', btn_load_data:'📂 Import Data',
     char_label:'Character', kart_label:'Kart',
     top_n_label:'Win cutoff:', top_n_btn:'Change',
@@ -1873,18 +1856,11 @@ function applyI18n(){
   var fmu=document.querySelector('#min-tries-input+span');if(fmu)fmu.textContent=t('filter_min_tries_unit');
   var frl=document.querySelector('label[for="recent-n-input"]');if(frl)frl.textContent=t('filter_recent_n');
   var fru=document.querySelector('#recent-n-input+span');if(fru)fru.textContent=t('filter_recent_n_unit');
-  // MMR tab labels
-  var mmrTitle=document.getElementById('mmr-panel-title');if(mmrTitle)mmrTitle.textContent=t('mmr_title');
-  var mmrDesc=document.getElementById('mmr-panel-desc');if(mmrDesc)mmrDesc.textContent=t('mmr_desc');
-  var mmrNi=document.getElementById('mmr-name-input');if(mmrNi)mmrNi.placeholder=t('mmr_placeholder');
-  var mmrSl=document.getElementById('mmr-season-label');if(mmrSl)mmrSl.textContent=t('mmr_season_label');
-  var mmrSb=document.getElementById('mmr-search-btn');if(mmrSb)mmrSb.textContent=t('mmr_search_btn');
-  var mmrNote=document.getElementById('mmr-panel-note');if(mmrNote)mmrNote.textContent=t('mmr_note');
   // MMR sync panel labels
   var mmrLl=document.getElementById('mmr-lounge-label');if(mmrLl)mmrLl.textContent=t('mmr_lounge_label');
   var mmrSyncLabel=document.getElementById('mmr-sync-btn-label');if(mmrSyncLabel)mmrSyncLabel.textContent=t('mmr_sync_btn');
-  // data-i18n-ph: placeholder の i18n
-  document.querySelectorAll('[data-i18n-ph]').forEach(function(el){el.placeholder=t(el.getAttribute('data-i18n-ph'));});
+  // edit modal format label
+  var efl=document.getElementById('edit-format-label');if(efl)efl.textContent=t('edit_format_label');
   // drive sync panel
   if(typeof gdrive_updateUI==='function')gdrive_updateUI();
   var edelete=document.querySelector('#modal-edit .bs-r');if(edelete)edelete.textContent=t('edit_delete');
@@ -1958,13 +1934,13 @@ function renderHelp(){
 <li>Date — within ±1 day (JST-converted)</li>
 </ul>
 <p>After sync, a summary shows ✅ synced count and ❓ unmatched count. Tap either to filter the list. Unmatched matches show a subtle <em>未照合</em> badge and are retried on the next sync.</p>`},
-    {icon:'📊',title:'MMR Tab',body:`<p>Look up any player's MMR stats directly in the app.</p>
+    {icon:'📊',title:'Stats',body:`<p>Automatically displays the stats of the player set via MMR Sync.</p>
 <ol>
-<li>Open the <strong>📊 MMR</strong> tab</li>
-<li>Enter a player name, FC code, Discord ID, or MKC ID</li>
-<li>Select the season and mode (24P / 12P), then tap <strong>Search</strong></li>
+<li>Set your Lounge name in the <strong>Match History</strong> tab and run <strong>📡 MMR Sync</strong> once</li>
+<li>Open the <strong>📊 Stats</strong> tab — data loads automatically</li>
+<li>Use the <strong>24P / 12P</strong> toggle at the top to switch modes</li>
 </ol>
-<p>Results show current MMR, rank, win rate, average score, and a full MMR trend chart. The recent match table lists score, tier, MMR change, and a direct Lounge link for each event.</p>`},
+<p>Shows current MMR, rank, win rate, average score, and a full MMR trend chart. Tap any row in the recent match table to view the result image.</p>`},
     {icon:'💾',title:'Data',body:`<p><strong>Export Data (💾 button at bottom)</strong> — downloads a full JSON backup of all matches and settings.<br><strong>💾 button on each match card</strong> — exports just that one match as a JSON file.<br><strong>Import Data</strong> — restores from a JSON file. Existing .png/.avif image paths are protected and will not be overwritten by old emoji data.<br>Data auto-saves to localStorage on every action.</p><p style="margin-top:8px"><strong>☁️ Cloud Sync (Google Drive)</strong> — Use the sync panel in the Match History tab. Tap <strong>Connect Drive</strong> to sign in, then <strong>⬆️ Save to Cloud</strong> to back up all data or <strong>⬇️ Restore from Cloud</strong> to load. Both 12P and 24P data are saved and restored together.</p>`},
     {icon:'⚙️',title:'Settings',body:`<p><strong>Character / Kart</strong> — tap the panel in Match Input to open the image grid and select.<br><strong>Win Cutoff</strong> — change the placement threshold (default: top 12) via the <em>Change</em> button in the setup panel.<br><strong>Language</strong> — tap EN/JA in the header to toggle.<br><strong>Theme</strong> — use the dropdown in the header to switch between Default / Cyberpunk / Sakura / Midnight color schemes.</p>`},
   ]:[
@@ -2007,13 +1983,13 @@ function renderHelp(){
 <p>同期後はサマリーに ✅ 同期済み件数 / ❓ 未照合件数が表示されます。タップするとそのカテゴリだけフィルタリング。未照合の試合には「未照合」バッジが表示され、次回同期時に再試行されます。</p>
 <p style="margin-top:10px"><strong>🔒 Lounge名のロック</strong><br>一度同期を実行すると Lounge名の入力欄がロックされます。名前を変更したい場合は下のボタンからリセットしてください。</p>
 <button onclick="resetLoungeNameLock()" style="margin-top:8px;padding:5px 14px;font-size:11px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font);font-weight:700">🔓 Lounge名ロックをリセット</button>`},
-    {icon:'📊',title:'MMR照会',body:`<p>任意のプレイヤーのMMR情報をアプリ内から確認できます。</p>
+    {icon:'📊',title:'Stats',body:`<p>MMR同期で設定したLounge名のプレイヤー戦績を自動表示します。</p>
 <ol>
-<li><strong>📊 MMR</strong> タブを開く</li>
-<li>プレイヤー名・FCコード・Discord ID・MKC ID のいずれかを入力</li>
-<li>シーズンとモード（24P / 12P）を選択して <strong>検索</strong> をタップ</li>
+<li><strong>試合履歴</strong>タブでLounge名を設定し、<strong>📡 MMR同期</strong>を一度実行する</li>
+<li><strong>📊 Stats</strong> タブを開く（自動でデータ取得・表示）</li>
+<li>上部の <strong>24P / 12P</strong> トグルで表示モードを切り替え</li>
 </ol>
-<p>現在のMMR・ランク・勝率・平均スコア・MMR推移チャートを表示。直近試合テーブルではスコア・ティア・MMR変動・Loungeリンクを一覧確認できます。</p>`},
+<p>現在のMMR・ランク・勝率・平均スコア・MMR推移チャートを表示。直近試合テーブルではスコア・ティア・MMR変動を一覧確認でき、各行をタップするとリザルト画像が表示されます。</p>`},
     {icon:'💾',title:'データ管理',body:`<p><strong>データを保存（画面下の💾ボタン）</strong> — 全データをJSONでエクスポート。<br><strong>試合カードの💾ボタン</strong> — その1試合だけをJSONファイルに保存。<br><strong>データを読込</strong> — JSONをインポート。既存の.png/.avif画像パスは保護され、旧絵文字データで上書きされません。<br>操作のたびに自動保存されるので、リロードしてもデータは消えません。</p><p style="margin-top:8px"><strong>☁️ クラウド同期（Google Drive）</strong> — 試合履歴タブの同期パネルから利用。<strong>連携を開始</strong>でGoogle アカウントと接続後、<strong>⬆️ クラウドへ保存</strong>で全データをDriveに保存、<strong>⬇️ クラウドから復元</strong>でDriveのデータを読み込めます。12P・24P両モードのデータを一括で保存・復元します。</p>`},
     {icon:'⚙️',title:'設定',body:`<p><strong>キャラ・マシン</strong> — 試合入力パネルのカードをタップすると画像グリッドが開き、選択できます。<br><strong>入賞基準</strong> — セットアップパネルの<em>変更</em>ボタンでデフォルト12位以内を変更できます。<br><strong>言語</strong> — ヘッダーのEN/JAボタンで切り替えられます。<br><strong>テーマ</strong> — ヘッダーのドロップダウンから Default / Cyberpunk / Sakura / Midnight を切り替えられます。</p>`},
   ];
@@ -2060,10 +2036,11 @@ function switchVsMode(mode){
   localStorage.setItem('mkw_tracker_vsmode', vsMode);
   // 表示中タブを再描画
   renderMetrics();renderSession();
-  var tabs=['session','matches','ranking','tier','help'];
+  var tabs=['session','matches','ranking','tier','mmr','help'];
   var visibleTab=tabs.find(function(t){var el=document.getElementById('tab-'+t);return el&&el.style.display!=='none';});
   if(visibleTab==='matches')renderMatches();
   if(visibleTab==='ranking')renderRanking();
+  if(visibleTab==='mmr')renderStatsTab();
   if(visibleTab==='tier')renderTierAnalysis();
 }
 function buildVsToggle(){
@@ -2083,7 +2060,7 @@ function switchTab(tab){
   if(tab==='ranking')renderRanking();
   if(tab==='tier')renderTierAnalysis();
   if(tab==='help')renderHelp();
-  if(tab==='mmr')renderMmrModeToggle();
+  if(tab==='mmr')renderStatsTab();
 }
 function closeM(id){document.getElementById(id).style.display='none';}
 function closeMBg(id,e){if(e.target===document.getElementById(id))closeM(id);}
@@ -2273,6 +2250,13 @@ function openEditMatch(id){
     return '<button class="tier-btn tier-'+tier+sel+'" onclick="setEditTier(\''+tier+'\')">'+tier+'</button>';
   }).join('');
   document.getElementById('edit-tier-picker').innerHTML=tierBtns;
+  // Format picker
+  var FORMATS=['2v2','3v3','4v4','6v6','8v8','12v12'];
+  var fmtBtns=FORMATS.map(function(f){
+    var fsel=m.format===f?' t-sel':'';
+    return '<button class="tier-btn'+fsel+'" style="font-size:11px;padding:5px 8px;min-width:44px" onclick="setEditFormat(\''+f+'\')">'+f+'</button>';
+  }).join('');
+  document.getElementById('edit-format-picker').innerHTML=fmtBtns;
   document.getElementById('edit-memo').value=m.memo||'';
   document.getElementById('edit-date').value=m.date||'';
   // キャラ・マシン select populate
@@ -2307,6 +2291,13 @@ function setEditTier(t){
   if(m)m.tier=t;
   var btns=document.querySelectorAll('#edit-tier-picker .tier-btn');
   btns.forEach(function(b){b.classList.toggle('t-sel',b.textContent===t);});
+}
+function setEditFormat(f){
+  var m=matchHistory.find(function(x){return x.id===editMatchId;});
+  if(!m)return;
+  m.format=(m.format===f?undefined:f);
+  var btns=document.querySelectorAll('#edit-format-picker .tier-btn');
+  btns.forEach(function(b){b.classList.toggle('t-sel',b.textContent===f&&m.format===f);});
 }
 function updateEditRace(idx,val){
   var m=matchHistory.find(function(x){return x.id===editMatchId;});
@@ -3251,7 +3242,58 @@ const MMR_RANK_COLORS = {
   'Ruby':'#d51c5e','Sapphire':'#286CD3','Platinum':'#3FABB8',
   'Gold':'#FFD966','Silver':'#D9D9D9','Bronze':'#C65911','Iron':'#817876',
 };
-let mmrMode = '24p';
+// ===== Stats タブ（旧MMR照会） =====
+// vsMode に連動して自動取得。loungeName が設定されている場合のみ表示。
+var _statsRowExpanded = null; // 展開中テーブル行のID
+
+async function renderStatsTab(){
+  var vtEl = document.getElementById('mmr-vs-toggle');
+  if(vtEl) vtEl.innerHTML = buildVsToggle();
+  var resultEl = document.getElementById('mmr-result');
+  if(!resultEl) return;
+  if(!loungeName){
+    resultEl.innerHTML = '<div style="padding:2.5rem 1rem;text-align:center;color:var(--text3);font-size:13px;line-height:1.8">'
+      + (lang==='en'
+        ?'Set your Lounge name in the <strong style="color:var(--text2)">Match History</strong> tab and run <strong style="color:var(--text2)">📡 MMR Sync</strong> first.'
+        :'先に<strong style="color:var(--text2)">試合履歴</strong>タブでLounge名を設定し、<strong style="color:var(--text2)">📡 MMR同期</strong>を実行してください。')
+      + '</div>';
+    return;
+  }
+  var season = (document.getElementById('mmr-sync-season') ? document.getElementById('mmr-sync-season').value : null) || '2';
+  resultEl.innerHTML = '<div class="empty" style="padding:2rem">' + (lang==='en'?'Loading…':'読み込み中…') + '</div>';
+  var targetUrl = LOUNGE_BASE + '/api/player/details?name=' + encodeURIComponent(loungeName)
+    + '&season=' + encodeURIComponent(season) + '&game=mkworld' + vsMode;
+  try {
+    var data = await proxiedFetch(targetUrl);
+    if(!data || !data.name){ throw new Error('not_found'); }
+    renderMmrResult(data, season, vsMode);
+  } catch(e) {
+    var msg = e.message === 'not_found'
+      ? (lang==='en'?'Player not found.':'プレイヤーが見つかりません。')
+      : (lang==='en'?'Could not reach the API. Try again later.':'APIに接続できませんでした。しばらく時間をおいて再試行してください。');
+    resultEl.innerHTML = '<div style="padding:1.5rem;background:rgba(196,36,45,.1);border:1px solid #c4242d;border-radius:var(--radius);font-size:12px;color:#ff8080;line-height:1.7">' + msg + '</div>';
+  }
+}
+
+// テーブル行タップで Table Image をトグル表示
+// 画像URL: https://lounge.mkcentral.com/TableImage/{changeId}.png
+function toggleStatsRow(el, changeId){
+  var detailId = 'stats-img-' + changeId;
+  var existing = document.getElementById(detailId);
+  if(existing){ existing.remove(); _statsRowExpanded=null; return; }
+  if(_statsRowExpanded){ var prev=document.getElementById(_statsRowExpanded); if(prev)prev.remove(); }
+  _statsRowExpanded = detailId;
+  var div = document.createElement('div');
+  div.id = detailId;
+  div.style.cssText = 'padding:6px 0 6px;border-bottom:1px solid var(--border);text-align:center';
+  var detailsLink = '<div style="margin-top:4px"><a href="'+LOUNGE_BASE+'/mkworld/TableDetails/'+changeId+'" target="_blank" style="color:var(--blue);font-size:10px;text-decoration:none">🔗 Table #'+changeId+'</a></div>';
+  var imgUrl = LOUNGE_BASE + '/TableImage/' + changeId + '.png';
+  div.innerHTML = '<img src="'+imgUrl+'" style="max-width:100%;border-radius:6px;margin:2px 0" alt="Table '+changeId+'"'
+    + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'block\'">'
+    + '<span style="display:none;font-size:11px;color:var(--text3)">'+(lang==='en'?'Image not available':'画像を取得できませんでした')+'</span>'
+    + detailsLink;
+  el.insertAdjacentElement('afterend', div);
+}
 
 function mmrRankColor(rankName){
   if(!rankName) return 'var(--text3)';
@@ -3264,46 +3306,6 @@ function mmrCountryFlag(code){
   return String.fromCodePoint(...[...code.toUpperCase()].map(function(c){ return 0x1F1E6 + c.charCodeAt(0) - 65; }));
 }
 
-function renderMmrModeToggle(){
-  var el = document.getElementById('mmr-mode-toggle');
-  if(!el) return;
-  el.innerHTML = '<div class="vs-toggle-bar" style="margin-bottom:12px">'
-    + '<span class="vs-toggle-lbl">MODE</span>'
-    + '<button class="vs-btn'+(mmrMode==='24p'?' vs-sel':'')+'" onclick="setMmrMode(\'24p\')">24P</button>'
-    + '<button class="vs-btn'+(mmrMode==='12p'?' vs-sel vs-12':'')+'" onclick="setMmrMode(\'12p\')">12P</button>'
-    + '</div>';
-}
-function setMmrMode(mode){ mmrMode = mode; renderMmrModeToggle(); }
-
-async function fetchMmrData(){
-  var nameEl = document.getElementById('mmr-name-input');
-  var name = nameEl ? nameEl.value.trim() : '';
-  if(!name){ alert('プレイヤー名を入力してください'); return; }
-  var season = document.getElementById('mmr-season-input').value || '2';
-  var resultEl = document.getElementById('mmr-result');
-  resultEl.innerHTML = '<div class="empty" style="padding:2rem">検索中…</div>';
-
-  // 入力形式を自動判定（data_handler.py と同じロジック）
-  var queryKey = 'name';
-  if(/^\d{4}-\d{4}-\d{4}$/.test(name)) queryKey = 'fc';
-  else if(/^\d+$/.test(name)) queryKey = name.length >= 17 ? 'discordId' : 'mkcid';
-
-  var targetUrl = LOUNGE_BASE + '/api/player/details?' + queryKey + '=' + encodeURIComponent(name)
-    + '&season=' + encodeURIComponent(season) + '&game=mkworld' + mmrMode;
-  try {
-    var data = await proxiedFetch(targetUrl);
-    if(!data || !data.name){ throw new Error('not_found'); }
-    renderMmrResult(data, season, mmrMode);
-  } catch(e) {
-    var msg;
-    if(e.message === 'not_found'){
-      msg = 'プレイヤーが見つかりません。';
-    } else {
-      msg = 'APIに接続できませんでした。しばらく時間をおいて再試行してください。';
-    }
-    resultEl.innerHTML = '<div style="padding:1.5rem;background:rgba(196,36,45,.1);border:1px solid #c4242d;border-radius:var(--radius);font-size:12px;color:#ff8080;line-height:1.7">' + msg + '</div>';
-  }
-}
 
 function renderMmrResult(data, season, mode){
   var resultEl = document.getElementById('mmr-result');
@@ -3333,7 +3335,7 @@ function renderMmrResult(data, season, mode){
     var deltaColor = totalDelta >= 0 ? 'var(--green)' : '#ff6b6b';
     chartHtml = '<div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin:12px 0">'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-      + '<span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase">MMR推移（全' + chronological.length + '試合）</span>'
+      + '<span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase">'+(lang==='en'?'MMR History ('+chronological.length+' matches)':'MMR推移（全'+chronological.length+'試合）')+'</span>'
       + '<span style="font-size:11px;font-weight:800;color:'+deltaColor+'">'+deltaStr+' MMR</span>'
       + '</div>'
       + '<svg width="100%" viewBox="0 0 '+sw+' '+sh+'" preserveAspectRatio="none" style="display:block;height:'+sh+'px">'
@@ -3358,9 +3360,11 @@ function renderMmrResult(data, season, mode){
     var score = e.score != null ? e.score : '—';
     var tier = e.tier || '?';
     var tableLink = e.changeId
-      ? '<a href="'+LOUNGE_BASE+'/TableDetails/'+e.changeId+'" target="_blank" style="color:var(--text3);text-decoration:none;font-size:9px" title="Table '+e.changeId+'">🔗</a>'
+      ? '<a href="'+LOUNGE_BASE+'/mkworld/TableDetails/'+e.changeId+'" target="_blank" style="color:var(--text3);text-decoration:none;font-size:9px" title="Table '+e.changeId+'" onclick="event.stopPropagation()">🔗</a>'
       : '';
-    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px">'
+    var rowStyle = 'display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px' + (e.changeId ? ';cursor:pointer' : '');
+    var rowOnClick = e.changeId ? ' onclick="toggleStatsRow(this,\''+e.changeId+'\')"' : '';
+    return '<div style="'+rowStyle+'"'+rowOnClick+'>'
       + '<span style="width:74px;color:var(--text3);flex-shrink:0">'+date+'</span>'
       + '<span class="tier-badge tier-'+tier+'" style="font-size:9px;padding:1px 5px;flex-shrink:0">'+tier+'</span>'
       + '<span style="flex:1;color:var(--text2)">Score <strong style="color:var(--text)">'+score+'</strong></span>'
@@ -3400,21 +3404,21 @@ function renderMmrResult(data, season, mode){
     + '</div>'
     // スタッツグリッド
     + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px">'
-    + statBox('試合数', data.eventsPlayed!=null?data.eventsPlayed:'—')
-    + statBox('最高MMR', data.maxMmr!=null?data.maxMmr:'—')
-    + statBox('勝率', winRate)
-    + statBox('平均Score', avgScore)
-    + statBox('直近10', data.winLossLastTen||'—')
-    + statBox('直近平均', avgLast10)
+    + statBox(lang==='en'?'Matches':'試合数', data.eventsPlayed!=null?data.eventsPlayed:'—')
+    + statBox(lang==='en'?'Peak MMR':'最高MMR', data.maxMmr!=null?data.maxMmr:'—')
+    + statBox(lang==='en'?'Win Rate':'勝率', winRate)
+    + statBox(lang==='en'?'Avg Score':'平均Score', avgScore)
+    + statBox(lang==='en'?'Last 10':'直近10', data.winLossLastTen||'—')
+    + statBox(lang==='en'?'Last 10 Avg':'直近平均', avgLast10)
     + '</div>'
     // チャート
     + chartHtml
     // 変動テーブル
     + (recentEvents.length
-      ? '<div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin:12px 0 4px">直近'+recentEvents.length+'試合の変動</div>'
+      ? '<div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;margin:12px 0 4px">'+(lang==='en'?'Last '+recentEvents.length+' matches':'直近'+recentEvents.length+'試合の変動')+'</div>'
         + '<div style="display:flex;gap:8px;font-size:10px;font-weight:700;color:var(--text3);padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:2px">'
-        + '<span style="width:74px">日付</span><span style="width:36px">Tier</span><span style="flex:1">Score</span>'
-        + '<span style="width:54px;text-align:right">MMR</span><span style="width:44px;text-align:right">変動</span><span style="width:16px"></span>'
+        + '<span style="width:74px">'+(lang==='en'?'Date':'日付')+'</span><span style="width:36px">Tier</span><span style="flex:1">Score</span>'
+        + '<span style="width:54px;text-align:right">MMR</span><span style="width:44px;text-align:right">'+(lang==='en'?'Δ':'変動')+'</span><span style="width:16px"></span>'
         + '</div>'
         + tableRowsHtml
       : '')

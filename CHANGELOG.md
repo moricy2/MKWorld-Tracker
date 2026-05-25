@@ -4,6 +4,21 @@ All notable changes to MKWorld-Tracker are documented in this file.
 
 ---
 
+## [v1.5.3] - 2026-05-26
+
+### 改善・新機能
+
+- **Statsタブ刷新**: タブ名「MMR」→「Stats」に変更。手動検索フォームを廃止し、保存済みLounge名＋vsModeで自動取得・表示。vsMode切り替えで即座に再描画
+- **Stats 24p/12pトグル**: Statsタブに他タブと同様の 24P / 12P 切り替えバーを追加
+- **テーブルリンクURL修正**: `/TableDetails/` → `/mkworld/TableDetails/` に修正
+- **テーブル行タップでリザルト画像表示**: Stats直近試合テーブルの各行をタップすると `lounge.mkcentral.com/TableImage/{id}.png` をトグル表示。ロード失敗時はリンクにフォールバック
+- **訂正モーダルに人数形式追加**: 試合履歴訂正モーダルに「人数形式」ピッカー（2v2〜12v12）を追加。既存データの `format` を反映・再選択でトグル解除
+- **Stats i18n補完**: 戦績ボックス（試合数・最高MMR・勝率・平均Score・直近10・直近平均）、チャートラベル、テーブルヘッダーを JA/EN 両対応に
+- **Statsテーブル数値レイアウト修正**: `style` 属性の重複（cursor:pointer と display:flex が競合）による左詰め崩れを修正
+- **使い方タブ「MMR照会」→「Stats」**: JA/EN 両方の説明文を自動取得フローに合わせて書き直し
+
+---
+
 ## [v1.5.2] - 2026-05-25
 
 ### 改善・新機能
