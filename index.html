@@ -11,6 +11,7 @@
 <script>
 // gapi は gdrive_init() 呼び出し時に動的ロード — デフォルトでは読み込まない
 </script>
+<style id="theme-vars"></style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -272,6 +273,16 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   .course-grid{grid-template-columns:repeat(2,1fr)!important}
   .modal-setup-grid{grid-template-columns:repeat(3,1fr)!important}
   .rank-grid{grid-template-columns:repeat(6,1fr)!important}
+  /* 使い方タブ: モバイル最適化 */
+  #help-content{overflow-x:hidden;word-break:break-word}
+  #help-content ol,#help-content ul{padding-left:1.4em;margin:8px 0}
+  #help-content li{margin-bottom:4px;line-height:1.65}
+  #help-content p{margin-bottom:6px}
+  #help-content strong{color:var(--text)}
+  #help-content table{width:100%;font-size:11px;border-collapse:collapse;display:block;overflow-x:auto}
+  /* テーマセレクタ: 狭い画面で折り返し */
+  .mk-header-badge{flex-wrap:wrap;gap:4px;justify-content:flex-end}
+  #theme-select{max-width:110px}
 }
 /* キャラ・マシン設定 */
 .setup-panel{background:var(--bg2);border:1.5px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem}
@@ -367,6 +378,12 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
   <div class="mk-header-badge">
     <div class="mk-header-badge-item" id="vs-mode-badge">VS 24</div>
     <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:800;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font-mk);letter-spacing:1px;margin-top:4px">EN</button>
+    <select id="theme-select" onchange="setTheme(this.value)" style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font);margin-top:4px;outline:none">
+      <option value="default">🌙 Default</option>
+      <option value="cyberpunk">🟢 Cyberpunk</option>
+      <option value="sakura">🌸 Sakura</option>
+      <option value="midnight">⚫ Midnight</option>
+    </select>
   </div>
 </div>
 <div class="metrics" id="metrics"></div>
@@ -678,6 +695,25 @@ const BASE_COURSES=CUPS.flatMap(cup=>cup.courses.map(c=>({...c,cup:cup.name,isRo
 let customRoads=[],courseRecords={},matchHistory=[],courseImages={};
 let loungeName='';
 let matchListFilter=null; // null | 'synced' | 'unmatched'
+
+// ===== テーマ =====
+const THEMES={
+  default:'',
+  cyberpunk:'--bg:#020b02;--bg2:#061006;--bg3:#0c1e0c;--card:#0c1e0c;--card2:#122812;--text:#00ff41;--text2:#00cc33;--text3:#007a20;--border:#0a3010;--border2:#144820;--yellow:#ffe600;--green:#00ff41;--blue:#00b4ff;--red:#ff0040;--red2:#cc0033;--green2:#00cc33;--blue2:#008ecc',
+  sakura:'--bg:#1a0a10;--bg2:#280f1c;--bg3:#381628;--card:#381628;--card2:#481f35;--text:#ffe0ee;--text2:#d080a8;--text3:#804060;--border:#5a2045;--border2:#7a3060;--yellow:#ffb7c5;--green:#a8e6b0;--blue:#b0c8ff;--red:#ff607a;--red2:#d44060;--green2:#80c890;--blue2:#88aaee',
+  midnight:'--bg:#000000;--bg2:#0a0a0a;--bg3:#141414;--card:#141414;--card2:#1e1e1e;--text:#e8e8e8;--text2:#888888;--text3:#505050;--border:#282828;--border2:#383838',
+};
+let currentTheme=localStorage.getItem('mkw_theme')||'default';
+function setTheme(name){
+  currentTheme=name;
+  localStorage.setItem('mkw_theme',name);
+  var el=document.getElementById('theme-vars');
+  if(el) el.textContent=THEMES[name]?':root{'+THEMES[name]+'}':'';
+  var sel=document.getElementById('theme-select');
+  if(sel&&sel.value!==name) sel.value=name;
+}
+// 即時適用（スクリプト読み込み直後）
+(function(){ var el=document.getElementById('theme-vars'); if(el&&THEMES[currentTheme]) el.textContent=':root{'+THEMES[currentTheme]+'}'; })();
 BASE_COURSES.forEach(c=>{courseRecords[c.id]=[];});
 // 旧crown_city2/peach_stadium2データをcrown_city1/peach_stadium1にマイグレーション
 (function(){
@@ -910,7 +946,7 @@ function renderMetrics(){
   document.getElementById('metrics').innerHTML=''
     +'<div class="mc"><div class="mc-lbl">'+t('metrics_matches')+'</div><div class="mc-val">'+tm+'</div><div class="mc-sub">'+t('metrics_recorded')+'</div></div>'
     +'<div class="mc"><div class="mc-lbl">'+t('metrics_avg_pts')+'</div><div class="mc-val">'+avgPts+'</div><div class="mc-sub">'+t('metrics_per_match')+'</div></div>'
-    +'<div class="mc"><div class="mc-lbl">'+t('metrics_avg_rank')+'</div><div class="mc-val">'+overallAvg+'</div><div class="mc-sub">'+t('metrics_players')+'</div></div>'
+    +'<div class="mc"><div class="mc-lbl">'+t('metrics_avg_rank')+'</div><div class="mc-val">'+overallAvg+'</div><div class="mc-sub">'+(vsMode==='12p'?(lang==='en'?'out of 12':'12人中'):(lang==='en'?'out of 24':'24人中'))+'</div></div>'
     +'<div class="mc"><div class="mc-lbl">'+_topN+t('metrics_top_rate')+'</div><div class="mc-val">'+topRate+'%</div><div class="mc-sub">'+topHalf+'/'+total+(lang==='en'?' races':' レース')+'</div></div>';
 }
 
@@ -972,30 +1008,27 @@ function renderSession(){
   if(done<12||selEditRaceIdx!==null){
     // 50音/英字ソート・道コースは除外（道モード時は全コースから選択）、tempRoadは一時表示
     const allForPicker=getAllCourses().filter(c=>!c.isRoad||(tempRoad&&c.id===tempRoad.id));
-    const sortedCourses=allForPicker.slice().sort(kanaSort);
+    // 始点選択済み: 接続可能なコースのみ表示（非接続コースはパネルごと非表示）
+    const visibleCourses=allForPicker.filter(c=>{
+      if(!roadMode||!roadFrom) return c.id!=='rainbow_road'||!roadMode; // 道モード外は全件 / 道モード始点未選択時はレインボーロード除外
+      if(roadMode&&!roadFrom) return c.id!=='rainbow_road';
+      var allowed=ROAD_CONNECTIONS[roadFrom]||[];
+      return c.id===roadFrom||allowed.includes(c.id);
+    });
+    const sortedCourses=visibleCourses.slice().sort(kanaSort);
     const courseCards=sortedCourses.map(c=>{
       const isUsed=used.has(c.id);
       var th=thumbHtml(c,'cp-thumb','cp-thumb-ph');
       var roadCls='';
-      var roadDim=false;
       if(roadMode){
         if(roadFrom===c.id) roadCls=' road-from-sel';
         else if(roadTo===c.id) roadCls=' road-to-sel';
-        else if(roadFrom){
-          // 始点選択済み：接続先テーブルにないコースはdim
-          var allowed=ROAD_CONNECTIONS[roadFrom]||[];
-          if(allowed.length>0&&!allowed.includes(c.id)) roadDim=true;
-        } else if(!roadFrom&&c.id==='rainbow_road'){
-          // 始点未選択時：レインボーロードはdim（始点不可）
-          roadDim=true;
-        }
       }
       // tempRoad: 選択中の道を強調表示
       var isTempSel=tempRoad&&c.id===tempRoad.id;
       var normalSel=(!roadMode&&(selCourseId===c.id||isTempSel))?' cp-sel':'';
       var tempBadge=isTempSel?'<div class="cp-road-lbl" style="background:rgba(159,225,203,.9);color:#001a10">✓ '+(lang==="en"?'INTR':'道')+'</div>':'';
-      var dimStyle=roadDim?'opacity:.25;pointer-events:none;':'';
-      return '<div class="cp-card'+(c.isRoad?' road-type':'')+normalSel+roadCls+(isUsed?' used':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer;'+dimStyle+'">'
+      return '<div class="cp-card'+(c.isRoad?' road-type':'')+normalSel+roadCls+(isUsed?' used':'')+'" data-pick-course="'+c.id+'" style="cursor:pointer">'
         +th
         +'<div class="cp-name">'+cN(c)+'</div>'
         +(isUsed&&!roadMode?'<div class="cp-warn">⚠ '+( lang==='en'?'Already used':'選択済み')+'</div>':'')
@@ -1826,8 +1859,29 @@ function renderHelp(){
     {icon:'📋',title:'Match History',body:`<p>All matches newest-first. Tap a card to expand race details. Tap <strong>💾</strong> on a match to export that single match as a JSON file. Tap <strong>✏️ Edit</strong> to change rank, character, kart, tier, date or note. <strong>Delete Match</strong> is permanent.</p>`},
     {icon:'🗺',title:'Track Records',body:`<p>Shows records for the active mode (12P/24P). Tap a course to expand stats and history. Use the minimum attempts filter to narrow results. Sort by Average Rank, Win Rate, or Attempts.</p>`},
     {icon:'🎯',title:'Tier Analysis',body:`<p>Per-tier breakdown: match count, average score, average rank, win rate, best/worst score, and a sparkline of recent results.</p>`},
+    {icon:'📡',title:'MMR Sync',body:`<p>Automatically links your match history to <strong>MK World Lounge MMR data</strong>.</p>
+<ol>
+<li>Open the <strong>Match History</strong> tab and enter your Lounge name in the 🏆 field</li>
+<li>Select the season number (e.g. S2)</li>
+<li>Tap <strong>📡 MMR Sync</strong> — the app fetches your events from the Lounge API and matches them to your recorded matches</li>
+</ol>
+<p><strong>Matching criteria (all must pass):</strong></p>
+<ul>
+<li>Score — exact match</li>
+<li>Tier — case-insensitive match</li>
+<li>Mode — 24P or 12P must match</li>
+<li>Date — within ±1 day (JST-converted)</li>
+</ul>
+<p>After sync, a summary shows ✅ synced count and ❓ unmatched count. Tap either to filter the list. Unmatched matches show a subtle <em>未照合</em> badge and are retried on the next sync.</p>`},
+    {icon:'📊',title:'MMR Tab',body:`<p>Look up any player's MMR stats directly in the app.</p>
+<ol>
+<li>Open the <strong>📊 MMR</strong> tab</li>
+<li>Enter a player name, FC code, Discord ID, or MKC ID</li>
+<li>Select the season and mode (24P / 12P), then tap <strong>Search</strong></li>
+</ol>
+<p>Results show current MMR, rank, win rate, average score, and a full MMR trend chart. The recent match table lists score, tier, MMR change, and a direct Lounge link for each event.</p>`},
     {icon:'💾',title:'Data',body:`<p><strong>Export Data (💾 button at bottom)</strong> — downloads a full JSON backup of all matches and settings.<br><strong>💾 button on each match card</strong> — exports just that one match as a JSON file.<br><strong>Import Data</strong> — restores from a JSON file. Existing .png/.avif image paths are protected and will not be overwritten by old emoji data.<br>Data auto-saves to localStorage on every action.</p><p style="margin-top:8px"><strong>☁️ Cloud Sync (Google Drive)</strong> — Use the sync panel in the Match History tab. Tap <strong>Connect Drive</strong> to sign in, then <strong>⬆️ Save to Cloud</strong> to back up all data or <strong>⬇️ Restore from Cloud</strong> to load. Both 12P and 24P data are saved and restored together.</p>`},
-    {icon:'⚙️',title:'Settings',body:`<p><strong>Character / Kart</strong> — tap the panel in Match Input to open the image grid and select.<br><strong>Win Cutoff</strong> — change the placement threshold (default: top 12) via the <em>Change</em> button in the setup panel.<br><strong>Language</strong> — tap EN/JA in the header to toggle.</p>`},
+    {icon:'⚙️',title:'Settings',body:`<p><strong>Character / Kart</strong> — tap the panel in Match Input to open the image grid and select.<br><strong>Win Cutoff</strong> — change the placement threshold (default: top 12) via the <em>Change</em> button in the setup panel.<br><strong>Language</strong> — tap EN/JA in the header to toggle.<br><strong>Theme</strong> — use the dropdown in the header to switch between Default / Cyberpunk / Sakura / Midnight color schemes.</p>`},
   ]:[
     {icon:'🏁',title:'試合入力',body:`
 <p>1試合 = 12レースを記録します。</p>
@@ -1852,8 +1906,29 @@ function renderHelp(){
     {icon:'📋',title:'試合履歴',body:`<p>全試合を新しい順で表示。カードをタップして詳細を展開。各試合カードの<strong>💾</strong>ボタンで、その1試合だけをJSONファイルに書き出せます。<strong>✏️ 訂正</strong>で順位・キャラ・マシン・Tier・日付・メモを変更できます。<strong>試合を削除</strong>は取り消し不可です。</p>`},
     {icon:'🗺',title:'コース戦績',body:`<p>現在のモード（12P/24P）に対応した記録のみを表示。コース名をタップすると統計・履歴が展開されます。「最低試行回数」でコースを絞り込み可能。ソート順は「平均順位」「入賞率」「試行回数」で切り替えられます。</p>`},
     {icon:'🎯',title:'Tier分析',body:`<p>Tier別に試合数・平均得点・平均順位・入賞率・最高/最低得点・得点推移スパークラインを表示します。</p>`},
+    {icon:'📡',title:'MMR同期',body:`<p>手動入力した試合履歴を <strong>MK World Lounge の MMRデータ</strong> と自動で紐付けます。</p>
+<ol>
+<li><strong>試合履歴</strong>タブを開き、🏆 欄に自分のLounge名を入力</li>
+<li>シーズン番号を選択（例: S2）</li>
+<li><strong>📡 MMR同期</strong> をタップ — Lounge APIから取得した試合と照合・マージします</li>
+</ol>
+<p><strong>照合条件（すべて一致する必要あり）:</strong></p>
+<ul>
+<li>スコア — 完全一致</li>
+<li>ティア — 大文字小文字無視</li>
+<li>モード — 24P / 12P が一致</li>
+<li>日付 — JST換算で±1日以内</li>
+</ul>
+<p>同期後はサマリーに ✅ 同期済み件数 / ❓ 未照合件数が表示されます。タップするとそのカテゴリだけフィルタリング。未照合の試合には「未照合」バッジが表示され、次回同期時に再試行されます。</p>`},
+    {icon:'📊',title:'MMR照会',body:`<p>任意のプレイヤーのMMR情報をアプリ内から確認できます。</p>
+<ol>
+<li><strong>📊 MMR</strong> タブを開く</li>
+<li>プレイヤー名・FCコード・Discord ID・MKC ID のいずれかを入力</li>
+<li>シーズンとモード（24P / 12P）を選択して <strong>検索</strong> をタップ</li>
+</ol>
+<p>現在のMMR・ランク・勝率・平均スコア・MMR推移チャートを表示。直近試合テーブルではスコア・ティア・MMR変動・Loungeリンクを一覧確認できます。</p>`},
     {icon:'💾',title:'データ管理',body:`<p><strong>データを保存（画面下の💾ボタン）</strong> — 全データをJSONでエクスポート。<br><strong>試合カードの💾ボタン</strong> — その1試合だけをJSONファイルに保存。<br><strong>データを読込</strong> — JSONをインポート。既存の.png/.avif画像パスは保護され、旧絵文字データで上書きされません。<br>操作のたびに自動保存されるので、リロードしてもデータは消えません。</p><p style="margin-top:8px"><strong>☁️ クラウド同期（Google Drive）</strong> — 試合履歴タブの同期パネルから利用。<strong>連携を開始</strong>でGoogle アカウントと接続後、<strong>⬆️ クラウドへ保存</strong>で全データをDriveに保存、<strong>⬇️ クラウドから復元</strong>でDriveのデータを読み込めます。12P・24P両モードのデータを一括で保存・復元します。</p>`},
-    {icon:'⚙️',title:'設定',body:`<p><strong>キャラ・マシン</strong> — 試合入力パネルのカードをタップすると画像グリッドが開き、選択できます。<br><strong>入賞基準</strong> — セットアップパネルの<em>変更</em>ボタンでデフォルト12位以内を変更できます。<br><strong>言語</strong> — ヘッダーのEN/JAボタンで切り替えられます。</p>`},
+    {icon:'⚙️',title:'設定',body:`<p><strong>キャラ・マシン</strong> — 試合入力パネルのカードをタップすると画像グリッドが開き、選択できます。<br><strong>入賞基準</strong> — セットアップパネルの<em>変更</em>ボタンでデフォルト12位以内を変更できます。<br><strong>言語</strong> — ヘッダーのEN/JAボタンで切り替えられます。<br><strong>テーマ</strong> — ヘッダーのドロップダウンから Default / Cyberpunk / Sakura / Midnight を切り替えられます。</p>`},
   ];
   el.innerHTML='<div style="padding-bottom:2rem">'
     +sections.map(function(s){
@@ -2290,6 +2365,9 @@ document.addEventListener('DOMContentLoaded', function(){
     if(vsBtn){switchVsMode(vsBtn.getAttribute('data-vsmode'));return;}
   });
 
+  // テーマ初期値をセレクタに反映
+  var _tsel=document.getElementById('theme-select');
+  if(_tsel) _tsel.value=currentTheme;
   // 初期描画
   autoLoad();
   applyI18n();
@@ -2584,18 +2662,12 @@ function gdrive_silentInit(cb){
         console.warn('GDrive: token restore failed', e);
       }
     }
-    // サイレントで取得を試みる
-    gdrive_silentAuth(function(ok, err){
-      if(ok){
-        if(cb) cb(true);
-      } else {
-        // サイレント失敗 — ポップアップは出さずフラグだけ
-        gd.ready       = false;
-        gd.needsReauth = true;
-        console.info('GDrive silent auth failed:', err, '→ waiting for user interaction');
-        if(cb) cb(false);
-      }
-    });
+    // トークンなし / 期限切れ — 自動サイレント認証は行わない（ポップアップ廃止）
+    // ユーザーが手動でボタンを押したときだけ gdrive_interactiveAuth() を呼ぶ
+    gd.ready       = false;
+    gd.needsReauth = true;
+    console.info('GDrive: no valid token on startup → waiting for user interaction');
+    if(cb) cb(false);
   });
 }
 
