@@ -11,7 +11,6 @@
 <script>
 // gapi は gdrive_init() 呼び出し時に動的ロード — デフォルトでは読み込まない
 </script>
-<style id="theme-vars"></style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -366,6 +365,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 .drive-sync-connect{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--text3)}
 .drive-sync-connect a{color:#4285f4;font-size:10px}
 </style>
+<style id="theme-vars"></style>
 </head>
 <body>
 <div class="container">
@@ -379,10 +379,9 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
     <div class="mk-header-badge-item" id="vs-mode-badge">VS 24</div>
     <button id="lang-toggle" onclick="toggleLang()" style="font-size:11px;font-weight:800;padding:4px 10px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font-mk);letter-spacing:1px;margin-top:4px">EN</button>
     <select id="theme-select" onchange="setTheme(this.value)" style="font-size:10px;padding:3px 6px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font);margin-top:4px;outline:none">
-      <option value="default">🌙 Default</option>
-      <option value="cyberpunk">🟢 Cyberpunk</option>
-      <option value="sakura">🌸 Sakura</option>
-      <option value="midnight">⚫ Midnight</option>
+      <option value="navy">🌊 ネイビー</option>
+      <option value="black">⚫ ブラック</option>
+      <option value="white">⬜ ホワイト</option>
     </select>
   </div>
 </div>
@@ -427,7 +426,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
     </div>
   </div>
   <div class="drive-sync-panel" id="mmr-sync-panel" style="flex-direction:row;align-items:center;gap:10px;flex-wrap:wrap">
-    <span style="font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;flex-shrink:0">🏆 Lounge名</span>
+    <span id="mmr-lounge-label" style="font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;flex-shrink:0">🏆 Lounge名</span>
     <input id="lounge-name-input" type="text" placeholder="Your Lounge Name"
       style="flex:1;min-width:140px;font-size:13px;padding:6px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font);outline:none"
       oninput="saveLoungeSettings()">
@@ -435,7 +434,7 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
       style="width:40px;font-size:12px;padding:4px 6px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font);outline:none;text-align:center"></label>
     <button onclick="syncMmrData()"
       style="padding:6px 14px;font-size:12px;font-weight:800;border-radius:var(--radius);border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font-mk);white-space:nowrap;flex-shrink:0">
-      📡 MMR同期
+      <span id="mmr-sync-btn-label">📡 MMR同期</span>
     </button>
     <span id="mmr-sync-status" style="font-size:11px;color:var(--text3);flex-shrink:0"></span>
   </div>
@@ -458,6 +457,10 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
     <label for="min-tries-input">最低試行回数</label>
     <input class="filter-input" type="number" id="min-tries-input" min="0" value="0" oninput="onMinTriesChange(this.value)">
     <span style="font-size:11px;color:var(--text3)">回以上のコースを表示</span>
+    <span style="font-size:11px;color:var(--text3);margin-left:8px">|</span>
+    <label for="recent-n-input">直近</label>
+    <input class="filter-input" type="number" id="recent-n-input" min="0" step="10" value="0" style="width:52px" oninput="onRecentNChange(this.value)">
+    <span style="font-size:11px;color:var(--text3)">試合</span>
   </div>
   <div id="rank-list"></div>
 </div>
@@ -468,24 +471,24 @@ body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradi
 </div>
 <div id="tab-mmr" style="display:none">
   <div style="background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem">
-    <div style="font-family:var(--font-mk);font-size:15px;color:var(--yellow);margin-bottom:.5rem">📊 プレイヤーMMR照会</div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">MKCentral Lounge のプレイヤー情報を取得します。名前 / Discord ID / MKC ID で検索できます。</div>
+    <div id="mmr-panel-title" style="font-family:var(--font-mk);font-size:15px;color:var(--yellow);margin-bottom:.5rem">📊 プレイヤーMMR照会</div>
+    <div id="mmr-panel-desc" style="font-size:11px;color:var(--text2);margin-bottom:12px">MKCentral Lounge のプレイヤー情報を取得します。名前 / Discord ID / MKC ID で検索できます。</div>
     <div id="mmr-mode-toggle"></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">
-      <input id="mmr-name-input" type="text" placeholder="プレイヤー名 / Discord ID / MKC ID"
+      <input id="mmr-name-input" type="text" placeholder="プレイヤー名 / Discord ID / MKC ID" data-i18n-ph="mmr_placeholder"
         style="flex:1;min-width:180px;font-size:13px;padding:8px 10px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font);outline:none"
         onkeydown="if(event.key==='Enter')fetchMmrData()">
       <div style="display:flex;align-items:center;gap:6px">
-        <label style="font-size:11px;color:var(--text2);white-space:nowrap">シーズン</label>
+        <label id="mmr-season-label" style="font-size:11px;color:var(--text2);white-space:nowrap">シーズン</label>
         <input id="mmr-season-input" type="number" value="2" min="1" max="99"
           style="width:56px;font-size:13px;padding:6px 8px;border:1.5px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);font-family:var(--font);outline:none;text-align:center">
       </div>
-      <button onclick="fetchMmrData()"
+      <button id="mmr-search-btn" onclick="fetchMmrData()"
         style="padding:8px 20px;font-size:13px;font-weight:800;border-radius:var(--radius);border:none;background:var(--blue);color:#fff;cursor:pointer;font-family:var(--font-mk);white-space:nowrap">
         検索
       </button>
     </div>
-    <div style="font-size:10px;color:var(--text3)">※ MKCentral Lounge API を直接参照します。ブラウザのCORSポリシーにより接続できない場合があります。</div>
+    <div id="mmr-panel-note" style="font-size:10px;color:var(--text3)">※ MKCentral Lounge API を直接参照します。ブラウザのCORSポリシーにより接続できない場合があります。</div>
   </div>
   <div id="mmr-result"></div>
 </div>
@@ -694,16 +697,19 @@ const ROAD_CONNECTIONS={
 const BASE_COURSES=CUPS.flatMap(cup=>cup.courses.map(c=>({...c,cup:cup.name,isRoad:false})));
 let customRoads=[],courseRecords={},matchHistory=[],courseImages={};
 let loungeName='';
+let loungeNameLocked=false; // 一度同期成功するとロック
 let matchListFilter=null; // null | 'synced' | 'unmatched'
 
 // ===== テーマ =====
 const THEMES={
-  default:'',
-  cyberpunk:'--bg:#020b02;--bg2:#061006;--bg3:#0c1e0c;--card:#0c1e0c;--card2:#122812;--text:#00ff41;--text2:#00cc33;--text3:#007a20;--border:#0a3010;--border2:#144820;--yellow:#ffe600;--green:#00ff41;--blue:#00b4ff;--red:#ff0040;--red2:#cc0033;--green2:#00cc33;--blue2:#008ecc',
-  sakura:'--bg:#1a0a10;--bg2:#280f1c;--bg3:#381628;--card:#381628;--card2:#481f35;--text:#ffe0ee;--text2:#d080a8;--text3:#804060;--border:#5a2045;--border2:#7a3060;--yellow:#ffb7c5;--green:#a8e6b0;--blue:#b0c8ff;--red:#ff607a;--red2:#d44060;--green2:#80c890;--blue2:#88aaee',
-  midnight:'--bg:#000000;--bg2:#0a0a0a;--bg3:#141414;--card:#141414;--card2:#1e1e1e;--text:#e8e8e8;--text2:#888888;--text3:#505050;--border:#282828;--border2:#383838',
+  navy:'',  // デフォルト（:root で定義済み）
+  black:'--bg:#000000;--bg2:#0a0a0a;--bg3:#141414;--card:#141414;--card2:#1e1e1e;--text:#e8e8e8;--text2:#888888;--text3:#505050;--border:#282828;--border2:#383838',
+  white:'--bg:#f8f9fa;--bg2:#ffffff;--bg3:#f1f5f9;--card:#ffffff;--card2:#f8fafc;--text:#0f172a;--text2:#64748b;--text3:#94a3b8;--border:#e2e8f0;--border2:#cbd5e1;--yellow:#d97706;--green:#16a34a;--blue:#2563eb;--red:#dc2626;--red2:#b91c1c;--green2:#15803d;--blue2:#1d4ed8;--shadow:0 4px 24px rgba(0,0,0,.08)',
 };
-let currentTheme=localStorage.getItem('mkw_theme')||'default';
+// localStorage マイグレーション: 旧キー → 新キー
+(function(){var lk=localStorage.getItem('mkw_theme');if(lk==='default')localStorage.setItem('mkw_theme','navy');if(lk==='midnight')localStorage.setItem('mkw_theme','black');})();
+let currentTheme=localStorage.getItem('mkw_theme')||'navy';
+if(!THEMES[currentTheme])currentTheme='navy';
 function setTheme(name){
   currentTheme=name;
   localStorage.setItem('mkw_theme',name);
@@ -830,7 +836,7 @@ let chars=[...DEFAULT_CHARS];
 let charImages={};
 let kartImages={};
 let setupModalMode=null; // 'char' | 'kart' | 'char-img-ID' | 'kart-img-ID'
-let expandedMatch=null,selCourseId=null,selRank=null,editMatchId=null,selTier=null;
+let expandedMatch=null,selCourseId=null,selRank=null,editMatchId=null,selTier=null,selFormat=null;
 let selChar=chars.length>0?chars[0].id:null;
 let selKart=karts.length>0?karts[0].id:null;
 // 道モード
@@ -1003,6 +1009,17 @@ function renderSession(){
     return '<button class="tier-btn tier-'+tier+tSel+'" onclick="pickTier(\''+tier+'\')">'+tier+'</button>';
   }).join('');
   var tierHtml='<div class="picker-label">'+t('session_tier_label')+'</div><div class="tier-picker">'+tierBtns+'</div>';
+  // 人数形式ピッカー（Tier選択後に表示）
+  var formatHtml='';
+  if(selTier){
+    var FORMATS=['2v2','3v3','4v4','6v6','8v8','12v12'];
+    var fBtns=FORMATS.map(function(f){
+      var fSel=selFormat===f?' t-sel':'';
+      return '<button class="tier-btn'+fSel+'" style="font-size:11px;padding:5px 8px;min-width:44px" onclick="pickFormat(\''+f+'\')">'+f+'</button>';
+    }).join('');
+    formatHtml='<div class="picker-label" style="margin-top:8px">'+(lang==='en'?'Format (optional)':'人数形式（任意）')+'</div>'
+      +'<div class="tier-picker">'+fBtns+'</div>';
+  }
 
   let pickerHtml='';
   if(done<12||selEditRaceIdx!==null){
@@ -1129,6 +1146,7 @@ function renderSession(){
     +'<div class="progress-bar"><div class="progress-fill" style="width:'+Math.round(done/12*100)+'%"></div></div>'
     +setupPanelHtml
     +tierHtml
+    +formatHtml
     +summaryHtml
     +'<div>'+(raceListHtml||'<div class="empty" style="padding:1rem">'+t('session_first')+'</div>')+'</div>'
     +pickerHtml
@@ -1142,7 +1160,8 @@ function renderSession(){
   }
 }
 
-function pickTier(tier){selTier=tier;renderSession();autoSave();}
+function pickTier(tier){selTier=tier;if(selFormat)selFormat=null;renderSession();autoSave();}
+function pickFormat(f){selFormat=(selFormat===f?null:f);renderSession();autoSave();}
 function toggleRoadMode(){
   roadMode=!roadMode;
   roadFrom=null;roadTo=null;
@@ -1233,16 +1252,16 @@ function deleteRace(idx){session.races.splice(idx,1);selCourseId=null;selRank=nu
 function finishSession(){
   if(session.races.length!==12){alert(lang==='en'?'Please enter 12 races.':'12レース分の入力が必要です');return;}
   const totalPts=session.races.reduce((s,r)=>s+pts(r.rank,vsMode),0);
-  const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart,memo:session.memo||'',topN:getTopN(),mode:vsMode};
+  const match={id:Date.now(),date:session.date,races:[...session.races],totalPts,tier:selTier,charId:selChar,kartId:selKart,memo:session.memo||'',topN:getTopN(),mode:vsMode,format:selFormat||undefined};
   matchHistory.unshift(match);
   var _matchTier = selTier || '';
   session.races.forEach(r=>{if(!courseRecords[r.courseId])courseRecords[r.courseId]=[];courseRecords[r.courseId].push({rank:r.rank,date:session.date,tier:_matchTier,mode:vsMode});});
   session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
-  selCourseId=null;selRank=null;selTier=null;tempRoad=null;
+  selCourseId=null;selRank=null;selTier=null;selFormat=null;tempRoad=null;
   autoSave();renderMetrics();renderSession();
   alert(lang==='en'?'🏆 Match saved! Total: '+totalPts+' pt':'🏆 試合を記録しました！ 合計 '+totalPts+' pt');
 }
-function cancelSession(){if(session.races.length===0&&!selTier&&!selCourseId)return;if(!confirm(lang==='en'?'Reset this match?':'リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;selTier=null;roadMode=false;roadFrom=null;roadTo=null;tempRoad=null;selEditRaceIdx=null;renderSession();autoSave();}
+function cancelSession(){if(session.races.length===0&&!selTier&&!selCourseId)return;if(!confirm(lang==='en'?'Reset this match?':'リセットしますか？'))return;session={races:[],date:new Date().toISOString().slice(0,10),memo:''};selCourseId=null;selRank=null;selTier=null;selFormat=null;roadMode=false;roadFrom=null;roadTo=null;tempRoad=null;selEditRaceIdx=null;renderSession();autoSave();}
 
 function renderCourseGrid(){
   var courses=getAllCourses().slice().sort(kanaSort);
@@ -1396,7 +1415,7 @@ function renderMatches(){
   if(matchListFilter==='synced') displayHistory=filteredHistory.filter(function(m){ return m.currentMmr!=null; });
   else if(matchListFilter==='unmatched') displayHistory=filteredHistory.filter(function(m){ return m.mmrUnmatched&&m.currentMmr==null; });
   var filterStrip=matchListFilter?('<div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:5px 10px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;font-size:11px">'
-    +'<span style="color:var(--text2)">🔍 '+(matchListFilter==='synced'?'同期済みのみ':'未照合のみ')+'（'+displayHistory.length+'件）</span>'
+    +'<span style="color:var(--text2)">🔍 '+(matchListFilter==='synced'?(lang==='en'?'Synced only':'同期済みのみ'):(lang==='en'?'Unmatched only':'未照合のみ'))+(lang==='en'?' ('+displayHistory.length+')':'（'+displayHistory.length+'件）')+'</span>'
     +'<button onclick="clearMatchFilter()" style="background:none;border:1px solid var(--border2);border-radius:var(--radius);color:var(--text2);padding:2px 8px;cursor:pointer;font-size:10px;font-family:var(--font)">✕ 全件表示</button>'
     +'</div>'):'';
   var matchNumMap={};filteredHistory.forEach(function(m,i){ matchNumMap[m.id]=filteredHistory.length-i; });
@@ -1419,6 +1438,7 @@ function renderMatches(){
       detailHtml='<div class="match-detail">'+raceRows+'</div>';
     }
     var tierBadge=m.tier?('<span class="tier-badge tier-'+m.tier+'" style="margin-left:6px">'+m.tier+'</span>'):'';
+    var formatBadge=m.format?('<span style="font-size:9px;font-weight:700;color:var(--text2);background:var(--bg3);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;margin-left:4px">'+m.format+'</span>'):'';
     var ch=chars.find(function(c){return c.id===m.charId;});
     var kt=karts.find(function(k){return k.id===m.kartId;});
     var chSrc=ch?(charImages[ch.id]||charImgPath(ch)):null;
@@ -1442,6 +1462,7 @@ function renderMatches(){
       +'<div class="match-hdr-left" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">'
       +'<span class="match-no">'+(lang==="en"?"Match #":"試合 #")+matchNumMap[m.id]+"</span>"
       +tierBadge
+      +formatBadge
       +'<span style="font-size:11px;color:var(--text3)">'+m.date+'</span>'
       +(m.mmrUnmatched&&m.currentMmr==null?'<span style="font-size:9px;color:var(--text3);border:1px solid var(--border2);border-radius:3px;padding:1px 4px;margin-left:4px;opacity:0.7">未照合</span>':'')
       +'</div>'
@@ -1459,11 +1480,17 @@ function renderMatches(){
 function toggleMatch(id){expandedMatch=expandedMatch===id?null:id;renderMatches();}
 function setMatchFilter(type){matchListFilter=type;renderMatches();}
 function clearMatchFilter(){matchListFilter=null;renderMatches();}
-// ランキング展開中コースID / 試行回数フィルタ
+// ランキング展開中コースID / 試行回数フィルタ / 直近N試合フィルタ
 var selRankCourse=null;
 var minTries=0;
+var recentN=0;
 function onMinTriesChange(val){
   minTries=Math.max(0,parseInt(val)||0);
+  selRankCourse=null;
+  renderRanking();
+}
+function onRecentNChange(val){
+  recentN=Math.max(0,parseInt(val)||0);
   selRankCourse=null;
   renderRanking();
 }
@@ -1471,11 +1498,29 @@ function renderRanking(){
   // vsToggle を更新
   var rvt=document.getElementById('ranking-vs-toggle');
   if(rvt)rvt.innerHTML=buildVsToggle();
-  // minTries input を同期
+  // minTries / recentN input を同期
   var mti=document.getElementById('min-tries-input');
   if(mti&&parseInt(mti.value)!==minTries)mti.value=minTries;
+  var rni=document.getElementById('recent-n-input');
+  if(rni&&parseInt(rni.value)!==recentN)rni.value=recentN;
+  // 直近N試合絞り込み: recentN>0 のとき対象モードの試合を最新N件に限定
+  function getEffectiveMatchHistory(){
+    var modeMatches=matchHistory.filter(function(m){return (m.mode||'24p')===vsMode;});
+    return recentN>0?modeMatches.slice(0,recentN):modeMatches;
+  }
   // モードフィルタ: vsMode に対応する courseRecords のみ集計
   function getModeRecs(cid){
+    if(recentN>0){
+      // 直近N試合モード: matchHistory から直接再構築
+      var recentMatches=getEffectiveMatchHistory();
+      var recs=[];
+      recentMatches.forEach(function(m){
+        m.races.forEach(function(r){
+          if(r.courseId===cid)recs.push({rank:r.rank,date:m.date,tier:m.tier||'',mode:vsMode});
+        });
+      });
+      return recs;
+    }
     var allRecs=courseRecords[cid]||[];
     return allRecs.filter(function(r){
       // tier フィールドから対応試合を逆引き — rec.mode を持つ場合はそれを使用
@@ -1700,6 +1745,16 @@ const I18N={
     drive_last_sync:'最終同期:',
     filter_min_tries:'最低試行回数',
     filter_min_tries_unit:'回以上のコースを表示',
+    filter_recent_n:'直近',
+    filter_recent_n_unit:'試合',
+    mmr_title:'📊 プレイヤーMMR照会',
+    mmr_desc:'MKCentral Lounge のプレイヤー情報を取得します。名前 / Discord ID / MKC ID で検索できます。',
+    mmr_placeholder:'プレイヤー名 / Discord ID / MKC ID',
+    mmr_season_label:'シーズン',
+    mmr_search_btn:'検索',
+    mmr_note:'※ MKCentral Lounge API を直接参照します。ブラウザのCORSポリシーにより接続できない場合があります。',
+    mmr_lounge_label:'🏆 Lounge名',
+    mmr_sync_btn:'📡 MMR同期',
     sync_banner_title:'Google Drive に新しいデータがあります',
     sync_banner_apply:'適用する',
     sync_banner_dismiss:'無視',
@@ -1759,6 +1814,16 @@ const I18N={
     drive_last_sync:'Last sync:',
     filter_min_tries:'Min attempts',
     filter_min_tries_unit:'+ tries',
+    filter_recent_n:'Recent',
+    filter_recent_n_unit:'matches',
+    mmr_title:'📊 Player MMR Lookup',
+    mmr_desc:'Fetch player stats from MKCentral Lounge. Search by name, Discord ID, or MKC ID.',
+    mmr_placeholder:'Player name / Discord ID / MKC ID',
+    mmr_season_label:'Season',
+    mmr_search_btn:'Search',
+    mmr_note:'※ Queries the MKCentral Lounge API directly. CORS restrictions may prevent access in some browsers.',
+    mmr_lounge_label:'🏆 Lounge Name',
+    mmr_sync_btn:'📡 Sync MMR',
     sync_banner_title:'New data available on Google Drive',
     sync_banner_apply:'Apply',
     sync_banner_dismiss:'Ignore',
@@ -1806,6 +1871,20 @@ function applyI18n(){
   // filter bar
   var fml=document.querySelector('label[for="min-tries-input"]');if(fml)fml.textContent=t('filter_min_tries');
   var fmu=document.querySelector('#min-tries-input+span');if(fmu)fmu.textContent=t('filter_min_tries_unit');
+  var frl=document.querySelector('label[for="recent-n-input"]');if(frl)frl.textContent=t('filter_recent_n');
+  var fru=document.querySelector('#recent-n-input+span');if(fru)fru.textContent=t('filter_recent_n_unit');
+  // MMR tab labels
+  var mmrTitle=document.getElementById('mmr-panel-title');if(mmrTitle)mmrTitle.textContent=t('mmr_title');
+  var mmrDesc=document.getElementById('mmr-panel-desc');if(mmrDesc)mmrDesc.textContent=t('mmr_desc');
+  var mmrNi=document.getElementById('mmr-name-input');if(mmrNi)mmrNi.placeholder=t('mmr_placeholder');
+  var mmrSl=document.getElementById('mmr-season-label');if(mmrSl)mmrSl.textContent=t('mmr_season_label');
+  var mmrSb=document.getElementById('mmr-search-btn');if(mmrSb)mmrSb.textContent=t('mmr_search_btn');
+  var mmrNote=document.getElementById('mmr-panel-note');if(mmrNote)mmrNote.textContent=t('mmr_note');
+  // MMR sync panel labels
+  var mmrLl=document.getElementById('mmr-lounge-label');if(mmrLl)mmrLl.textContent=t('mmr_lounge_label');
+  var mmrSyncLabel=document.getElementById('mmr-sync-btn-label');if(mmrSyncLabel)mmrSyncLabel.textContent=t('mmr_sync_btn');
+  // data-i18n-ph: placeholder の i18n
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(el){el.placeholder=t(el.getAttribute('data-i18n-ph'));});
   // drive sync panel
   if(typeof gdrive_updateUI==='function')gdrive_updateUI();
   var edelete=document.querySelector('#modal-edit .bs-r');if(edelete)edelete.textContent=t('edit_delete');
@@ -1823,6 +1902,12 @@ function applyI18n(){
   if(sortBtns[0])sortBtns[0].textContent=t('sort_avg');
   if(sortBtns[1])sortBtns[1].textContent=t('sort_rate');
   if(sortBtns[2])sortBtns[2].textContent=t('sort_tries');
+  // テーマ選択肢のラベルを言語に合わせて更新
+  var _tsel=document.getElementById('theme-select');
+  if(_tsel){
+    var _themeLabels=lang==='en'?{navy:'🌊 Navy',black:'⚫ Black',white:'⬜ White'}:{navy:'🌊 ネイビー',black:'⚫ ブラック',white:'⬜ ホワイト'};
+    Array.from(_tsel.options).forEach(function(opt){if(_themeLabels[opt.value])opt.text=_themeLabels[opt.value];});
+  }
   // 言語依存の描画を再実行
   renderSession();
   renderMetrics();
@@ -1919,7 +2004,9 @@ function renderHelp(){
 <li>モード — 24P / 12P が一致</li>
 <li>日付 — JST換算で±1日以内</li>
 </ul>
-<p>同期後はサマリーに ✅ 同期済み件数 / ❓ 未照合件数が表示されます。タップするとそのカテゴリだけフィルタリング。未照合の試合には「未照合」バッジが表示され、次回同期時に再試行されます。</p>`},
+<p>同期後はサマリーに ✅ 同期済み件数 / ❓ 未照合件数が表示されます。タップするとそのカテゴリだけフィルタリング。未照合の試合には「未照合」バッジが表示され、次回同期時に再試行されます。</p>
+<p style="margin-top:10px"><strong>🔒 Lounge名のロック</strong><br>一度同期を実行すると Lounge名の入力欄がロックされます。名前を変更したい場合は下のボタンからリセットしてください。</p>
+<button onclick="resetLoungeNameLock()" style="margin-top:8px;padding:5px 14px;font-size:11px;border-radius:6px;border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);cursor:pointer;font-family:var(--font);font-weight:700">🔓 Lounge名ロックをリセット</button>`},
     {icon:'📊',title:'MMR照会',body:`<p>任意のプレイヤーのMMR情報をアプリ内から確認できます。</p>
 <ol>
 <li><strong>📊 MMR</strong> タブを開く</li>
@@ -1951,7 +2038,7 @@ function switchVsMode(mode){
   if(session.races.length>0){
     if(!confirm(lang==='en'?'Switch mode? Current session will be reset.':'モードを切り替えます。入力中の試合はリセットされます。'))return;
     session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
-    selCourseId=null;selRank=null;selTier=null;roadMode=false;roadFrom=null;roadTo=null;tempRoad=null;selEditRaceIdx=null;
+    selCourseId=null;selRank=null;selTier=null;selFormat=null;roadMode=false;roadFrom=null;roadTo=null;tempRoad=null;selEditRaceIdx=null;
   }
   // ヘッダーバッジ更新
   var badge=document.querySelector('.mk-header-badge-item');
@@ -1964,8 +2051,11 @@ function switchVsMode(mode){
   });
   selRankCourse=null;
   minTries=0;
+  recentN=0;
   var _mti=document.getElementById('min-tries-input');
   if(_mti)_mti.value=0;
+  var _rni=document.getElementById('recent-n-input');
+  if(_rni)_rni.value=0;
   // モード切替時は自動同期しない（手動 Upload/Download を使用）
   localStorage.setItem('mkw_tracker_vsmode', vsMode);
   // 表示中タブを再描画
@@ -2046,7 +2136,7 @@ function importData(input){
     if(data.topN12)topN12=data.topN12;
       selChar=chars.length>0?chars[0].id:null;
       selKart=karts.length>0?karts[0].id:null;
-      selTier=null;selCourseId=null;selRank=null;
+      selTier=null;selFormat=null;selCourseId=null;selRank=null;
       session={races:[],date:new Date().toISOString().slice(0,10),memo:''};
       autoSave();
       renderMetrics();renderSession();
@@ -2396,6 +2486,7 @@ function autoSave(){
       selChar:selChar,
       selKart:selKart,
       selTier:selTier,
+      selFormat:selFormat,
       selCourseId:selCourseId,
       selRank:selRank,
       roadMode:roadMode,
@@ -2406,6 +2497,7 @@ function autoSave(){
       courseMemos:typeof courseMemos!=='undefined'?courseMemos:{},
       courseAbbr:COURSE_ABBR,
       loungeName:loungeName,
+      loungeNameLocked:loungeNameLocked,
       _savedAt:new Date().toISOString(),  // Drive との新旧判定に使用
     };
     localStorage.setItem('mkw_tracker',JSON.stringify(payload));
@@ -2451,6 +2543,7 @@ function autoLoad(){
     if(data.selKart)selKart=data.selKart;
     else if(karts.length>0)selKart=karts[0].id;
     if(data.selTier)selTier=data.selTier;
+    if(data.selFormat)selFormat=data.selFormat;
     if(data.selCourseId)selCourseId=data.selCourseId;
     if(data.selRank)selRank=data.selRank;
     if(data.roadMode)roadMode=data.roadMode;
@@ -2481,6 +2574,10 @@ function autoLoad(){
       loungeName=data.loungeName;
       var _lni=document.getElementById('lounge-name-input');
       if(_lni)_lni.value=loungeName;
+    }
+    if(data.loungeNameLocked){
+      loungeNameLocked=true;
+      applyLoungeNameLock();
     }
   }catch(e){}
 }
@@ -3030,7 +3127,21 @@ const MK8DX_LOUNGE_BASE = 'https://www.mariokartcentral.com/mk8dx/lounge';
 
 function saveLoungeSettings(){
   var el=document.getElementById('lounge-name-input');
-  if(el)loungeName=el.value.trim();
+  if(el&&!loungeNameLocked)loungeName=el.value.trim();
+  autoSave();
+}
+function applyLoungeNameLock(){
+  var inp=document.getElementById('lounge-name-input');
+  if(!inp)return;
+  inp.disabled=loungeNameLocked;
+  inp.style.opacity=loungeNameLocked?'0.55':'1';
+  inp.style.cursor=loungeNameLocked?'not-allowed':'text';
+  inp.title=loungeNameLocked?(lang==='en'?'Locked — reset from Help tab':'ロック中 — 使い方タブからリセット可'):'';
+}
+function resetLoungeNameLock(){
+  if(!confirm(lang==='en'?'Reset Lounge name lock? This allows changing the name and re-syncing.':'Lounge名ロックを解除しますか？名前を変更して再同期できるようになります。'))return;
+  loungeNameLocked=false;
+  applyLoungeNameLock();
   autoSave();
 }
 
@@ -3111,18 +3222,21 @@ async function syncMmrData(){
     var unmatchedTotal=matchHistory.filter(function(m){ return m.mmrUnmatched&&m.currentMmr==null; }).length;
     var apiExtra=apiEvents.length-usedIdx.size;
 
+    // 同期完了 → Lounge名ロック
+    if(!loungeNameLocked){ loungeNameLocked=true; applyLoungeNameLock(); }
     autoSave();
     renderMatches();
     statusEl.style.color='var(--green)';
-    statusEl.textContent='完了 +'+matched;
+    statusEl.textContent=(lang==='en'?'Done +':'完了 +')+matched;
 
     if(summaryEl){
       summaryEl.style.display='flex';
+      var _isEn=lang==='en';
       summaryEl.innerHTML=
         '<span style="color:var(--text3)">S'+syncSeason+':</span>'
-        +'<span onclick="setMatchFilter(\'synced\')" style="cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(72,199,142,.12);color:var(--green)">✅ '+syncedTotal+'件同期済み</span>'
-        +(unmatchedTotal>0?'<span onclick="setMatchFilter(\'unmatched\')" style="cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(255,214,0,.1);color:var(--yellow)">❓ '+unmatchedTotal+'件未照合</span>':'')
-        +(apiExtra>0?'<span style="color:var(--text3)">ℹ️ API余剰'+apiExtra+'件</span>':'');
+        +'<span onclick="setMatchFilter(\'synced\')" style="cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(72,199,142,.12);color:var(--green)">✅ '+syncedTotal+(_isEn?' synced':'件同期済み')+'</span>'
+        +(unmatchedTotal>0?'<span onclick="setMatchFilter(\'unmatched\')" style="cursor:pointer;padding:2px 8px;border-radius:4px;background:rgba(255,214,0,.1);color:var(--yellow)">❓ '+unmatchedTotal+(_isEn?' unmatched':'件未照合')+'</span>':'')
+        +(apiExtra>0?'<span style="color:var(--text3)">ℹ️ '+(_isEn?'API extra: '+apiExtra:'API余剰'+apiExtra+'件')+'</span>':'');
     }
   } catch(e) {
     statusEl.style.color='#ff8080';
